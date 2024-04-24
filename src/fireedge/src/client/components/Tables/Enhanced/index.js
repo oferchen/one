@@ -34,13 +34,13 @@ import {
 } from 'react-table'
 
 import {
+  ChangeViewTable,
   GlobalActions,
   GlobalFilter,
   GlobalLabel,
   GlobalSearch,
   GlobalSelectedRows,
   GlobalSort,
-  ChangeViewTable,
   LABEL_COLUMN_ID,
 } from 'client/components/Tables/Enhanced/Utils'
 import Pagination from 'client/components/Tables/Enhanced/pagination'
@@ -74,10 +74,12 @@ const EnhancedTable = ({
   rootProps = {},
   searchProps = {},
   noDataMessage,
+  noDataCustomRenderer,
   messages = [],
   dataDepend,
   readOnly = false,
   tableViews,
+  zoneId,
 }) => {
   const styles = EnhancedTableStyles({
     readOnly: readOnly,
@@ -367,7 +369,7 @@ const EnhancedTable = ({
         {!isLoading &&
           !isUninitialized &&
           page?.length === 0 &&
-          (noDataMessage || (
+          (noDataCustomRenderer || noDataMessage || (
             <span className={styles.noDataMessage}>
               <InfoEmpty />
               <Translate word={T.NoDataAvailable} />
@@ -391,6 +393,7 @@ const EnhancedTable = ({
           return (
             <RowComponent
               {...rowProps}
+              zone={zoneId}
               key={key}
               original={original}
               value={values}
@@ -469,10 +472,12 @@ EnhancedTable.propTypes = {
     PropTypes.node,
     PropTypes.bool,
   ]),
+  noDataCustomRenderer: PropTypes.object,
   messages: PropTypes.array,
   dataDepend: PropTypes.oneOfType([PropTypes.array, PropTypes.string]),
   readOnly: PropTypes.bool,
   tableViews: PropTypes.object,
+  zoneId: PropTypes.string,
 }
 
 export * from 'client/components/Tables/Enhanced/Utils'
