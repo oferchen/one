@@ -32,7 +32,7 @@ module TransferManager
     #    "ubuntu2004-6-4-4643-1.test:/var/lib/one//datastores/0/2/disk.0"
     class Action
 
-        attr_reader :logger, :vm
+        attr_reader :logger, :vm, :one
 
         def initialize(options = {})
             @options={
@@ -117,16 +117,15 @@ module TransferManager
             success = rc.code == 0 || (opt[:ok_rc] && opt[:ok_rc] == rc.code)
 
             unless success
-                opt[:err_msg] ||= "Command failed:\n#{script}"
+                err = opt[:err_msg] || "Command failed:\n#{script}"
 
-                @logger.error "#{opt[:err_msg].chomp}\nError: #{rc.stdout}"
+                @logger.error "#{err.chomp}\nError: #{rc.stdout}"
+                @logger.error "ERROR: #{err.chomp})\n"
+                @logger.error "  [STDOUT] #{rc.stdout.gsub("\n", '\n')}\n" unless opt[:nostdout]
+                @logger.error "  [STDERR] #{rc.stderr.gsub("\n", '\n')}\n" unless opt[:nostderr]
             end
 
-            if opt[:nostdout] && opt[:nostderr]
-                rc.code
-            else
-                rc
-            end
+            rc
         end
 
         # Creates dst path dir at host.
@@ -155,14 +154,18 @@ module TransferManager
                      :host    => host,
                      :err_msg => "Error creating directory #{path} at #{host}")
 
-            exit(rc) if rc != 0 && do_exit
+            exit(rc.code) if rc.code != 0 && do_exit
 
-            rc
+            rc.code
         end
 
         #  @return[String] VM_MAD name for this host
         def vm_mad
             @vm['/VM/HISTORY_RECORDS/HISTORY[last()]/VM_MAD']
+        end
+
+        def persistent?(disk_id)
+            @vm["/VM/TEMPLATE/DISK [ DISK_ID = #{disk_id} ]/SAVE"].casecmp('YES') == 0
         end
 
         def kvm?
@@ -201,11 +204,11 @@ module TransferManager
 
             rc = ssh(:host => host, :cmds => script)
 
-            return if rc == 0
+            return if rc.code == 0
 
             @logger.error "Error creating #{dir}/.monitor at #{host}"
 
-            exit(rc)
+            exit(rc.code)
         end
 
         private
