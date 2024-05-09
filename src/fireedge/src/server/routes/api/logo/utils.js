@@ -14,10 +14,10 @@
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
 const { getSunstoneViewConfig } = require('server/utils/yml')
-const { existsSync, readFileSync } = require('fs')
+const { existsSync } = require('fs')
 const path = require('path')
 const { global } = require('window-or-global')
-const sharp = require('sharp')
+const Jimp = require('jimp')
 
 /**
  * Retrieves the logo filename.
@@ -28,7 +28,7 @@ const getLogo = () => {
   const config = getSunstoneViewConfig()
   const logo = config?.logo
 
-  const validFilenameRegex = /^[a-zA-Z0-9-_]+\.(jpg|jpeg|png|svg)$/
+  const validFilenameRegex = /^[a-zA-Z0-9-_]+\.(jpg|jpeg|png|)$/
 
   if (
     logo &&
@@ -76,13 +76,10 @@ const validateLogo = (logo) => {
  */
 const encodeLogo = async (filePath) => {
   try {
-    const imageBuffer = readFileSync(filePath)
-    const image = sharp(imageBuffer)
+    const image = await Jimp.read(filePath)
+    const data = await image.getBufferAsync(Jimp.MIME_PNG)
 
-    return image
-      .toFormat('png')
-      .toBuffer()
-      .then((data) => `data:image/png;base64,${data.toString('base64')}`)
+    return `data:image/png;base64,${data.toString('base64')}`
   } catch (error) {
     return null
   }
@@ -96,12 +93,11 @@ const encodeLogo = async (filePath) => {
  */
 const encodeFavicon = async (filePath) => {
   try {
-    const imageBuffer = readFileSync(filePath)
-    const image = sharp(imageBuffer)
+    const image = await Jimp.read(filePath)
+    const resizedImage = await image.resize(32, 32)
+    const data = await resizedImage.getBufferAsync(Jimp.MIME_PNG)
 
-    const resizedImageBuffer = await image.resize(32, 32).png().toBuffer()
-
-    return `data:image/png;base64,${resizedImageBuffer.toString('base64')}`
+    return `data:image/png;base64,${data.toString('base64')}`
   } catch (error) {
     return null
   }
