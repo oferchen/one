@@ -17,7 +17,7 @@
 const {
   httpMethod,
   from: fromData,
-} = require('server/utils/constants/defaults')
+} = require('../../../utils/constants/defaults')
 
 const { POST, DELETE, GET } = httpMethod
 const basepath = '/tfa'

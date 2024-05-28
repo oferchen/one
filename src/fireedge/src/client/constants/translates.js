@@ -162,6 +162,8 @@ module.exports = {
   Reschedule: 'Reschedule',
   Reserve: 'Reserve',
   Resize: 'Resize',
+  ResizeRestricted:
+    'You cannot resize the disk because its SIZE attribute is restricted. Please, contact with your administrator.',
   ResizeCapacity: 'Resize capacity',
   ResizeSomething: 'Resize: %s',
   Resume: 'Resume',
@@ -303,6 +305,13 @@ module.exports = {
   ConfirmPassword: 'Confirm Password',
   PasswordsMustMatch: 'Passwords must match',
   Token2FA: '2FA Token',
+  GetAuthenticatorApp: 'Get authenticator app: ',
+  ScanThisQr: 'Scan this Qr',
+  EnterVerificationCode: 'Enter Verification Code',
+  TwoFactorAuthentication: 'Two Factor Authentication',
+  RegisterAuthenticationApp: 'Register authentication App',
+  AuthenticatorAppSunstone: 'Authenticator app (HOTP) [Legacy]',
+  AuthenticatorApp: 'Authenticator app (HOTP)',
   KeepLoggedIn: 'Keep me logged in',
   KeepLast: 'Keep Last',
   KeepAliveID: 'Keepalive service ID',
@@ -903,7 +912,17 @@ module.exports = {
   Emulated: 'Emulated',
   PCIPassthroughAutomatic: 'PCI Passthrough - Automatic',
   PCIPassthroughManual: 'PCI Passthrough - Manual',
+  AttachPci: 'Attach PCI device',
+  AttachPciSuccess: 'PCI attached successfully - Virtual machine #%s',
+  DetachPci: 'Detach PCI device',
+  DetachPciSuccess: 'PCI detached successfully - Virtual machine #%s',
+  PCISpecificDevice: 'Specific device',
+  PCISpecificDeviceHelp:
+    'Check if you want to specify a short address of a PCI device',
   ShortAddress: 'Short address',
+  NicPciWarning:
+    ' PCI passthrough of network devices is configured per NIC, in the "Network" tab. Do not add network devices here.',
+  PciAttachWarning: 'PCI only can be attach or detach in POWEROFF state.',
   /* VM schema - snapshot */
   VmSnapshotNameConcept: 'The new snapshot name. It can be empty',
   VmSnapshotHint: `
@@ -1068,6 +1087,8 @@ module.exports = {
     the template is located.
   `,
   /* VM Template schema - placement */
+  HostRequirements: 'Host Requirements',
+  DatastoreRequirements: 'Datastore Requirements',
   HostReqExpression: 'Host requirements expression',
   HostReqExpressionConcept: `
     Boolean expression that rules out provisioning hosts
@@ -1841,6 +1862,16 @@ module.exports = {
   'groups.actions.edit.admins': 'Edit administrators',
   'groups.actions.edit.admins.form': 'Select the administrators',
   'groups.actions.edit.admins.success': 'Administrators updated',
+
+  'groups.view.admin.name': 'Admin view',
+  'groups.view.admin.description': 'View used by admin users',
+  'groups.view.user.name': 'User view',
+  'groups.view.user.description': 'View used by regular users',
+  'groups.view.cloud.name': 'Cloud view',
+  'groups.view.cloud.description': 'View used by cloud users',
+  'groups.view.groupadmin.name': 'Admin group view',
+  'groups.view.groupadmin.description':
+    'View used by the admin users of the group',
 
   /* Showback */
   'showback.title': 'Showback',

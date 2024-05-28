@@ -17,7 +17,6 @@ import { object, ObjectSchema } from 'yup'
 
 import { GRAPHICS_SCHEMA } from './graphicsSchema'
 import { INPUTS_SCHEMA } from './inputsSchema'
-import { PCI_DEVICES_SCHEMA } from './pciDevicesSchema'
 import { VIDEO_SCHEMA } from './videoSchema'
 
 /**
@@ -30,11 +29,9 @@ import { VIDEO_SCHEMA } from './videoSchema'
 export const SCHEMA = (hypervisor, oneConfig, adminGroup, isUpdate) =>
   object()
     .concat(INPUTS_SCHEMA)
-    .concat(PCI_DEVICES_SCHEMA)
     .concat(GRAPHICS_SCHEMA(hypervisor, oneConfig, adminGroup, isUpdate))
     .concat(VIDEO_SCHEMA(hypervisor))
 
 export * from './graphicsSchema'
 export * from './inputsSchema'
-export * from './pciDevicesSchema'
 export * from './videoSchema'

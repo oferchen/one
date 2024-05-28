@@ -80,7 +80,7 @@ const AttachAction = memo(
               // Set field path
               if (nic) {
                 if (isPci) {
-                  setFieldPath(`extra.InputOutput.PCI.${indexPci}`)
+                  setFieldPath(`extra.PciDevices.PCI.${indexPci}`)
                 } else {
                   setFieldPath(`extra.Network.NIC.${indexNic}`)
                 }
@@ -145,7 +145,7 @@ const DetachAction = memo(({ nic, onSubmit, sx, oneConfig, adminGroup }) => {
   )
 })
 
-const UpdateAction = memo(({ nic, onSubmit, sx }) => (
+const UpdateAction = memo(({ nic, onSubmit, sx, oneConfig, adminGroup }) => (
   <ButtonToTriggerForm
     buttonProps={{
       'data-cy': `update-nic-${nic.NIC_ID}`,
@@ -158,7 +158,11 @@ const UpdateAction = memo(({ nic, onSubmit, sx }) => (
         dialogProps: { title: T.Update, dataCy: 'modal-update-nic' },
         form: () =>
           UpdateNicForm({
-            stepProps: { defaultData: nic },
+            stepProps: {
+              defaultData: nic,
+              oneConfig,
+              adminGroup,
+            },
             initialValues: nic,
           }),
         onSubmit: onSubmit,

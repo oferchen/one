@@ -544,8 +544,8 @@ public:
      *  @return 0 if success
      */
     int get_images(int vm_id, int uid, const std::string& tm_mad_sys,
-            std::vector<Attribute *> disks, VectorAttribute * context,
-            std::string& error_str);
+            std::vector<VectorAttribute *> disks, VectorAttribute * context,
+            bool is_q35, std::string& error_str);
 
     /**
      *  Release the images in the disk set
@@ -821,6 +821,13 @@ public:
      *  @param do_volatile consider volatile disks for incremental backups
      */
     bool backup_increment(bool do_volatile);
+
+    /**
+     *  Returns list of disk IDs, ready for backup
+     *
+     *  @param do_volatile consider volatile disks
+     */
+    void backup_disk_ids(bool do_volatile, std::vector<int>& ids);
 
 protected:
 
