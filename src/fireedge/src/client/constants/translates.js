@@ -17,8 +17,13 @@ module.exports = {
   /* pagination / stepper */
   Back: 'Back',
   Previous: 'Previous',
+  Of: 'of',
+  DivideWindow: 'Divide Window',
+  UnDivideWindow: 'Undivide Window',
   Next: 'Next',
   Sort: 'Sort',
+  Asc: 'Asc',
+  Desc: 'Desc',
   SortBy: 'Sort by',
   Filter: 'Filter',
   Filters: 'Filters',
@@ -39,6 +44,11 @@ module.exports = {
   SelectAllResources: 'Select all %s resources',
   ClearSelection: 'Clear selection',
   ResetFilters: 'Clear current search query, filters, and sorts',
+  VmsClearErrors:
+    'Clear error messages and warnings from selects Virtual Machines',
+  ItemsTables: 'Displays the items as a Table',
+  ItemsRow: 'Displays the items as a list',
+  RowsPerPage: 'Rows per page',
 
   /* actions */
   Accept: 'Accept',
@@ -73,7 +83,6 @@ module.exports = {
   CopiedToClipboard: 'Copied to clipboard',
   Create: 'Create',
   CreateDatastore: 'Create Datastore',
-  CreateDockerfile: 'Create Dockerfile',
   CreateFile: 'Create File',
   CreateHost: 'Create Host',
   CreateImage: 'Create Image',
@@ -116,6 +125,7 @@ module.exports = {
   DetachRestricted:
     'You cannot delete this resource because it has restricted attributes on this template. Please, contact with your administrator.',
   DetachSomething: 'Detach: %s',
+
   Disable: 'Disable',
   Dismiss: 'Dismiss',
   DiskSnapshotCreate: 'Disk snapshot create',
@@ -182,9 +192,10 @@ module.exports = {
   SelectDatastore: 'Select a Datastore to store the resource',
   SelectDatastoreImage: 'Select a Datastore',
   SelectDatastores: 'Select datastores',
+  SelectDisk: 'Select disk',
   SelectDockerHubTag: 'Select DockerHub image tag (default latest)',
   SelectGroup: 'Select a group',
-  SelectHost: 'Select a host',
+  SelectHost: 'Select host',
   SelectHosts: 'Select hosts',
   SelectMarketplace: 'Select Marketplace',
   SelectNetwork: 'Select a network',
@@ -201,6 +212,8 @@ module.exports = {
   Share: 'Share',
   Show: 'Show',
   ShowAll: 'Show all',
+  ShowBelongingUser: 'Show all owned by the user',
+  ShowBelongingUserAndGroups: 'Show all owned by the user or his groups',
   SignIn: 'Sign In',
   SignOut: 'Sign Out',
   SnapshotCreate: 'Snapshot create',
@@ -268,6 +281,12 @@ module.exports = {
   Monthly: 'Monthly',
   Yearly: 'Yearly',
   Hourly: 'Hourly',
+  Years: 'Years',
+  Months: 'Months',
+  Weeks: 'Weeks',
+  Days: 'Days',
+  Hours: 'Hours',
+  Minutes: 'Minutes',
   EachHours: 'Each %s hours',
   AfterTimes: 'After %s times',
   Today: 'Today',
@@ -289,6 +308,11 @@ module.exports = {
   HowManyTimesDoYouWantThisActionToExecute:
     'How many times do you want this action to execute?',
   NumberOfRepetitions: 'Number of Repetitions',
+  In: 'in',
+  WarningBefore: 'Warning before',
+  Never: 'Never',
+  Repetition: 'Repetition',
+  Date: 'Date',
 
   /* footer */
   MadeWith: 'Made with',
@@ -304,6 +328,14 @@ module.exports = {
   Password: 'Password',
   ConfirmPassword: 'Confirm Password',
   PasswordsMustMatch: 'Passwords must match',
+  ChangePassword: 'Change password',
+  ChangePasswordSuccess: 'Succesfully changed password',
+  ChangePasswordAdminWarning:
+    'Users oneadmin and serveradmin can not change theirs passwords using Sunstone.',
+  ChangePasswordAdminWarningLink:
+    'See OpenNebula documentation to get more details.',
+  ChangePasswordLdapWarning:
+    'Users with authentication driver LDAP can not change theirs passwords using Sunstone.',
   Token2FA: '2FA Token',
   GetAuthenticatorApp: 'Get authenticator app: ',
   ScanThisQr: 'Scan this Qr',
@@ -326,12 +358,16 @@ module.exports = {
   Medium: 'Medium',
   High: 'High',
   Error: 'Error',
+  Debug: 'Debug',
+  Message: 'Message',
+  AllSeverities: 'All Severities',
   Outdated: 'Outdated',
   Updated: 'Updated',
   Updating: 'Updating',
   Reserved: 'Reserved',
   Vrouter: 'Vrouter',
   SessionExpired: 'Sorry, your session has expired',
+  WrongUsernamePassword: 'Wrong username or password',
   OnlyForOneadminGroup:
     'Only members of the oneadmin group can access OneProvision functionality',
   SomethingWrong: 'Something go wrong',
@@ -396,6 +432,7 @@ module.exports = {
   Language: 'Language',
   View: 'View',
   DefaultZoneEndpoint: 'Default Endpoint',
+  Endpoint: 'Endpoint',
   LinkOtherConfigurationsUser: 'More user configurations',
   MessageLoginToken:
     'A login token acts as a password and can be used to authenticate with OpenNebula through  CLI, or the API',
@@ -489,6 +526,58 @@ module.exports = {
   VDCs: 'VDCs',
   ACL: 'ACL',
   ACLs: 'ACLs',
+  DatastoreSize: 'Datastore Size',
+  VMCount: 'VM Count',
+  NetworkLeases: 'Network Leases',
+  ImageRVMS: 'Image RVMS',
+  Quota: 'Quota',
+  Accounting: 'Accounting',
+  VMQuota: 'VM Quota',
+  DatastoreQuota: 'Datastore Quota',
+  NetworkQuota: 'Network Quota',
+  ImageQuota: 'Image Quota',
+  ResourceIds: 'Resource IDs',
+  ResourceIdsConcept: 'Select or type a Resource ID',
+  ResourceIdsInvalid:
+    'Invalid format or duplicate ID. Please enter a positive number.',
+  QuotaControls: 'Quota Controls',
+  RunningMemory: 'Running Memory',
+  RunningCPU: 'Running CPU',
+  RunningCPULower: 'Running Cpu',
+  SystemDiskSize: 'System Disk Size',
+  CPU: 'CPU',
+  CPULower: 'Cpu',
+  QuotaHelpTitle: 'How to use Quota Controls',
+  QuotaHelpStep1: 'Select the quota type from the dropdown.',
+  QuotaHelpStep2: '(Optional) Individual Resource Quotas.',
+  QuotaHelpStep2Tooltip: 'enter Resource IDs over which this quota will apply',
+  QuotaHelpStep3: 'Select identifiers for the quota.',
+  QuotaHelpStep3Tooltip:
+    'this further qualifies the quota type to a more specific attribute',
+  QuotaHelpStep4: 'Enter the value for the selected quota.',
+  QuotaHelpStep5: 'Click Apply to set the quotas.',
+  GroupBy: 'Group By',
+  ChartType: 'Chart Type',
+  LineChart: 'Line Chart',
+  BarChart: 'Bar Chart',
+  AreaChart: 'Area Chart',
+  TableChart: 'Table Chart',
+  CPUHours: 'CPU Hours',
+  MemoryGBHours: 'Memory GB Hours',
+  DiskMBHours: 'Disk MB Hours',
+  ExportCSV: 'Export as CSV',
+  ExportPDF: 'Export as PDF',
+  Export: 'Export',
+  TotalCost: 'Total Cost',
+  Month: 'Month',
+  AuthenticationDriver: 'Authentication driver',
+  EditPublicSSHKey: 'Edit Public SSH Key',
+  EditPrivateSSHKey: 'Edit Private SSH Key',
+  EditSSHKeyPassphrase: 'Edit SSH Key Passphrase',
+  SaveChanges: 'Save Changes',
+  PasteSSHKey: 'Paste your SSH Key here...',
+  PastePrivateSSHKey: 'Paste your Private SSH Key here...',
+  EnterPassphrase: 'Enter your passphrase...',
 
   /* sections - infrastructure */
   Cluster: 'Cluster',
@@ -498,6 +587,7 @@ module.exports = {
   Infrastructure: 'Infrastructure',
   Zone: 'Zone',
   Zones: 'Zones',
+  Vnet: 'Vnet',
   'cluster.form.create.general.help.title': 'Cluster',
   'cluster.form.create.general.help.paragraph.1.1':
     'Clusters group together hosts, datastores and virtual networks that are configured to work together. A cluster is used to:',
@@ -508,7 +598,7 @@ module.exports = {
   'cluster.form.create.general.help.paragraph.2':
     'Please, select a name for the cluster',
   'cluster.form.create.help.link':
-    'See Open Nebula documentation to get more details about clusters.',
+    'See OpenNebula documentation to get more details about clusters.',
   'cluster.form.create.hosts.help.title': 'Hosts',
   'cluster.form.create.hosts.help.paragraph.1':
     'Please, select one or more hosts in the hosts table. Hosts are not mandatory, so you can skip this step.',
@@ -579,18 +669,20 @@ module.exports = {
   CustomBus: 'Custom bus',
   Fs: 'Fs',
   CustomFormat: 'Custom Format',
-  Dockerfile: 'Dockerfile',
   Running: 'Running',
   DoNotRestoreNICAttributes: 'Do not restore NIC attributes',
   DoNotRestoreIPAttributes: 'Do not restore IP attributes',
+  RestoreIndividualDisk: 'Restore individual disk',
   Full: 'Full',
   Increment: 'Increment',
+  Increments: 'Increments',
   Incremental: 'Incremental',
   Mode: 'Mode',
   ResetBackup: 'Reset',
   IncrementMode: 'Increment Mode',
   IncrementId: 'Increment ID',
   RestoreBackup: 'Restore backup',
+  RestoreVm: 'Restore VM',
   BackupJobs: 'BackupJobs',
   BackupJob: 'BackupJob',
 
@@ -654,10 +746,10 @@ module.exports = {
   CPUQuota: 'CPU quota',
   CPUQuotaConcept:
     'Run backups in a systemd slice with a given cpu quota (percentage). Use > 100 for using several CPUs',
-  DatastoreQuota: 'Datastore quotas',
-  NetworkQuota: 'Network quotas',
-  ImageQuota: 'Image quotas',
-  VmQuota: 'VM quotas',
+  DatastoreQuotas: 'Datastore quotas',
+  NetworkQuotas: 'Network quotas',
+  ImageQuotas: 'Image quotas',
+  VmQuotas: 'VM quotas',
   CompressionLevel: 'Compression level',
   CompressionLevelConcept:
     'Compress backups in the datastore, it needs a Restic repository with format version 2',
@@ -719,6 +811,8 @@ module.exports = {
   Instances: 'Instances',
   VM: 'VM',
   VMs: 'VMs',
+  VirtualMachines: 'Virtual Machines',
+  VmsTab: 'Vms',
   VMsBackupJob: 'VMs in BackupJob',
   VMsBackupJobError: 'VMs in error',
   VMsBackupJobBackingUp: 'VMs Backing Up',
@@ -726,7 +820,7 @@ module.exports = {
   VMsBackupJobBackingUpState: 'Backing Up',
   VMsBackupJobOutdatedState: 'Outdated',
   VMsBackupJobOrder: 'VM List (ordered)',
-  VirtualRouter: 'Virtual Router',
+  VirtualRouter: 'Virtual router',
   VirtualRouters: 'Virtual Routers',
   VMGroup: 'VM Group',
   VMGroups: 'VM Groups',
@@ -739,6 +833,20 @@ module.exports = {
   ServiceTemplates: 'Service Templates',
   VirtualRouterTemplate: 'Virtual Router Template',
   VirtualRouterTemplates: 'Virtual Router Templates',
+  VirtualRouterNICStart: 'Add a NIC to Start Configuring',
+  VirtualRouterNICStart1:
+    'In a Virtual Router, a Network Interface Card (NIC) is crucial for managing network traffic efficiently. By adding a NIC, you unlock the ability to create virtual networks and route traffic between virtual machines, ensuring secure and efficient communication within your cloud environment.',
+  VirtualRouterNICStart2:
+    'Just add a NIC to your configuration, and you&apos;ll gain access to configure network settings for your virtual routers. This includes setting up IP addresses, Security Groups, and more, making your cloud environment more manageable and secure.',
+  VirtualRouterNICConfigured: "Configured NIC's",
+  VirtualRouterNICAdd: 'Add NIC',
+  VirtualRouterNICNetworkName: 'Network name',
+  VirtualRouterNICNetworkConfiguration: 'Network configuration',
+  VirtualRouterNICForceIpv4: 'Force IPv4',
+  VirtualRouterNICFloatingIP: 'Floating IP',
+  VirtualRouterNICForceIpv6: 'Force IPv6',
+  VirtualRouterUserInputsShowMandatory: 'Show mandatory only',
+  TotalVms: 'Total VMs',
 
   /* sections - flow */
   ApplicationsTemplates: 'Applications templates',
@@ -821,6 +929,7 @@ module.exports = {
   CtrlAltDel: 'Ctrl-Alt-Del',
   Reconnect: 'Reconnect',
   FullScreen: 'Full screen',
+  FullScreenInfo: 'Full screen information in datatables',
   Screenshot: 'Screenshot',
   LastConnection: 'Last connection',
   VmIsNotOnVCenter: '%s is not located on vCenter Host',
@@ -883,6 +992,7 @@ module.exports = {
   /* VM schema - network */
   NIC: 'NIC',
   Alias: 'Alias',
+  NICAlias: 'NIC Alias',
   CreateAlias: 'Create alias',
   AttachAlias: 'Attach alias',
   AsAnAlias: 'Attach as an alias',
@@ -923,11 +1033,16 @@ module.exports = {
   NicPciWarning:
     ' PCI passthrough of network devices is configured per NIC, in the "Network" tab. Do not add network devices here.',
   PciAttachWarning: 'PCI only can be attach or detach in POWEROFF state.',
+  /* VM schema - Pci */
+  Pci: 'Pci',
   /* VM schema - snapshot */
   VmSnapshotNameConcept: 'The new snapshot name. It can be empty',
   VmSnapshotHint: `
     Snapshots in this tab refer to System Snapshots, which includes all disks and
     the memory state of the VM. For disk snapshots, see the Storage tab`,
+  VmSnapshotNotAvailable: 'Taking snapshots is not available.',
+  VmSnapshotReferLogs:
+    'If none of the above worked, please refer to the VM monitoring logs.',
   /* VM schema - actions */
   EnforceCapacityChecks: 'Enforce capacity checks',
   EnforceCapacityChecksConcept: `
@@ -966,10 +1081,13 @@ module.exports = {
   OperationConceptDeleteVNet:
     'No recover action possible, delete the Virtual Network',
   /* VM schema - history */
+  History: 'History',
   RequestId: 'Request ID',
   TimeWhenTheStateChanged: 'Time when the state changed',
   TotalTimeInThisState: 'Total time in this state',
   PrologTimeForThisState: 'Prolog time for this state',
+  /* VM schema - history */
+  SchedActions: 'Sched actions',
 
   /* VM Template schema */
   /* VM Template schema - general */
@@ -1105,6 +1223,9 @@ module.exports = {
   DatastorePolicyExpressionConcept: `
     This field sets which attribute will be used to
     sort the suitable datastores for this VM`,
+  Stripping: 'Stripping',
+  LoadAware: 'Load-aware',
+  Packing: 'Packing',
   /* VM Template schema - Backup */
   BackupVolatileDisksQuestion: 'Backup volatile disks?',
   BackupVolatile: 'Backup volatile',
@@ -1262,8 +1383,10 @@ module.exports = {
   Arabic: 'Arabic',
   Croatian: 'Croatian',
   Czech: 'Czech',
+  Chinese: 'Chinese (China)',
   Danish: 'Danish',
   Dutch: 'Dutch',
+  English: 'English',
   EnglishGB: 'English (United Kingdom)',
   EnglishUS: 'English (United States)',
   Estonian: 'Estonian',
@@ -1288,7 +1411,9 @@ module.exports = {
   Portuguese: 'Portuguese',
   PortugueseBr: 'Portuguese (Brazil)',
   Russian: 'Russian',
+  Slavak: 'Slavak',
   Slovenian: 'Slovenian',
+  Spanish: 'Spanish',
   SpanishEs: 'Spanish (Spain)',
   SpanishLatam: 'Spanish (Latin American)',
   SpanishCatalan: 'Spanish (Catalan)',
@@ -1304,6 +1429,7 @@ module.exports = {
   NetTX: 'Net TX',
   NetDownloadSpeed: 'Net download speed',
   NetUploadSpeed: 'Net upload speed',
+  Graphs: 'Graphs',
   /* VM Template schema - Input/Output - graphics - Remote connections */
   DisplayUpdate: 'Display update',
   /* VM Template schema - NUMA */
@@ -1362,6 +1488,7 @@ module.exports = {
     'Consider VMs as running only when they report READY status via OneGate',
   ServiceAutoDelete: 'Automatic deletion of service when all VMs terminated',
   /* Service Template schema - general */
+  ServiceName: 'Service Name',
   Strategy: 'Strategy',
   ShutdownAction: 'Shutdown action',
   ReadyStatusGate: 'Ready status gate',
@@ -1370,6 +1497,80 @@ module.exports = {
   Roles: 'Roles',
   Cardinality: 'Cardinality',
   Parents: 'Parents',
+  ParentRoles: 'Parent roles',
+  AddChartes: 'Add Charters Values Configuration',
+  RecoverDelete: 'Recover delete',
+  /* Service Template schema - extra */
+  Existing: 'Existing',
+  Straight: 'Straight',
+  /* Service Template - roles */
+  RoleDefinition: 'Role Definition',
+  RoleDetails: 'Role Details',
+  RoleName: 'Role Name',
+  RolesMinVms: 'Min VMs',
+  RolesMaxVms: 'Max VMs',
+  Cooldown: 'Cooldown',
+  Adjust: 'Adjust',
+  Expression: 'Expression',
+  Period: 'Period',
+  Percentage: 'Percentage',
+  Recurrence: 'Recurrence',
+  TimeFormat: 'Time Format',
+  TimeExpression: 'Time Expression',
+  VMShutdownAction: 'VM Shutdown action',
+  Scale: 'Scale',
+  RoleEnterName: 'Enter a name for this role',
+  RoleSelectNetwork: 'Select a network for this role',
+  RoleMinElasticity: 'Minimum number of VMs for elasticity adjustments.',
+  RoleMaxElasticity: 'Maximum number of VMs for elasticity adjustments.',
+  RoleDurationScale:
+    'Duration after a scale operation in seconds. If it is not set, the default set in oneflow-server.conf will be used.',
+  RoleAdjustmentType: 'Adjustment type',
+  RoleAdjustmentTypePositiveNegative: 'Positive or negative adjustment',
+  VMGroupConfiguration: 'VM Group Configuration',
+  RoleDefineRoles: 'Define roles and placement constraints.',
+  RoleOptimize: 'Optimize performance and fault tolerance.',
+  RoleManageApps: 'Manage multi-VM applications efficiently.',
+  /* Service Template - configuration */
+  RoleConfiguration: 'Role Configuration',
+
+  /* VMGroups - Role definition */
+  NewRole: 'New Role',
+  VMAffinity: 'VM-VM Affinity',
+  HostAffinity: 'Host Affinity',
+  AddRoleAffinity: 'Add a role name to assign Host-VM affinity',
+  AffinedHosts: 'Affined Hosts',
+  NoAffinedHosts:
+    'No affined hosts. Assign a set of hosts where the VMs of this rolecan be allocated.',
+  NoAffinedHostsConcept:
+    'Affined hosts are VMs grouped together on a set of hosts to better modularize deployments and increase performance.',
+  AntiAffinedHosts: 'Anti-Affined Hosts',
+  NoAntiAffinedHosts:
+    'No anti-affined hosts. Assign a set of hosts where the VMs of this role can&apos;t be allocated.',
+  NoAntiAffinedHostsConcept:
+    'Anti-affined hosts are VMs separated across different hosts to ensure redundancy and fault-tolerance.',
+  AffinedRoles: 'Affined Roles',
+  AntiAffinedRoles: 'Anti-Affined Roles',
+
+  /* VMGroups - Role affinity */
+  AddGroup: 'Add Group',
+  AffinedGroups: 'Affined Groups',
+  AffinedGroupsDescription:
+    'Affined groups improve performance and communication by placing related VM roles together on the same host. Ideal for roles that require high interactivity and shared resources.',
+  AffinedGroupsPotentialCase1: 'Database clusters requiring shared storage.',
+  AffinedGroupsPotentialCase2:
+    'High-performance computing with intensive data exchange.',
+  AffinedGroupsPotentialCase3:
+    'Real-time processing applications demanding low-latency communication.',
+  AntiAffinedGroups: 'Anti-Affined Groups',
+  AntiAffinedGroupsDescription:
+    'Anti-Affined groups enhance reliability and fault tolerance by distributing VM roles across different hosts. Suitable for roles that need isolation to prevent resource contention and single points of failure.',
+  AntiAffinedGroupsPotentialCase1: 'Operational VMs separated from backup VMs.',
+  AntiAffinedGroupsPotentialCase2:
+    'Diverse application servers to prevent simultaneous failures.',
+  AntiAffinedGroupsPotentialCase3:
+    'Resource-heavy VMs spread out to avoid performance bottlenecks.',
+  PotentialUseCases: 'Potential Use Cases',
 
   /* Virtual Network schema - network */
   Driver: 'Driver',
@@ -1428,12 +1629,24 @@ module.exports = {
   ReservationParent: 'Reservation parent',
   ReservedFromVNetId: 'Reserved from VNET %s',
   GuacamoleConnections: 'Guacamole Connections',
+  Lease: 'Lease',
+  Leases: 'Leases',
+  HoldIP: 'Hold IP',
+  Resource: 'Resource',
   /* Virtual Network schema - driver configuration */
   NetworkMode: 'Network mode',
   Bridge: 'Bridge',
-  BridgeConcept: 'Name of the physical bridge in the nodes to attach VM NICs',
+  BridgeConcept:
+    'This lets you specify the name of the bridge to be created in the hosts.',
+  BridgeSwitch: 'Custom name for bridge',
+  BridgeSwitchConcept:
+    'If enabled, you have to define the name of the bridge. Otherwise, OpenNebula will create the name of the bridge with the "onebr" prefix.',
   PhysicalDevice: 'Physical device',
-  PhysicalDeviceConcept: 'Node NIC to send/receive virtual network traffic',
+  PhysicalDeviceConcept:
+    'Device name of the physical network card in the host to route traffic to. Example: eth0',
+  PhysicalDeviceSwitch: 'Use only private host networking',
+  PhysicalDeviceSwitchConcept:
+    'If enabled, the Virtual Network will not connect to any physical device and hence the Virtual Machines will be able to communicate only with other Virtual Machines in the same virtual network and in the same host.',
   MacSpoofingFilter: ' MAC spoofing filter',
   IpSpoofingFilter: ' IP spoofing filter',
   MTU: 'MTU of the interface',
@@ -1454,6 +1667,7 @@ module.exports = {
   AutomaticOuterVlanId: 'Automatic Outer VLAN ID',
   InvalidAttribute: 'Invalid attribute',
   /* Virtual Network schema - address range */
+  Address: 'Address',
   Addresses: 'Addresses',
   AddressRange: 'Address Range',
   FirstIPv4Address: 'First IPv4 address',
@@ -1501,13 +1715,18 @@ module.exports = {
   Protocol: 'Protocol',
   IcmpType: 'ICMP Type',
   IcmpTypeV6: 'ICMPv6 Type',
+  TotalUpdatedVms: 'Total updated VMs',
+  TotalOutdatedVms: 'Total outdated VMs',
+  TotalErrorVms: 'Total error VMs',
 
   /* Host schema */
   IM_MAD: 'IM MAD',
   VM_MAD: 'VM MAD',
   Wilds: 'Wilds',
+  Wild: 'Wild',
   Zombies: 'Zombies',
   Numa: 'NUMA',
+  NumaLower: 'Numa',
   Hostname: 'Hostname',
   /* Host schema - capacity */
   AllocatedMemory: 'Allocated Memory',
@@ -1535,11 +1754,9 @@ module.exports = {
 
   /* Marketplace App schema */
   'marketplace.configuration.title': 'Configuration attributes',
-  'marketplace.form.create.general.name': 'Name',
-  'marketplace.form.create.general.description': 'Description',
   'marketplace.form.create.general.type': 'Storage backend',
   'marketplace.form.create.help.link':
-    'See Open Nebula documentation to get more details about marketplaces.',
+    'See OpenNebula documentation to get more details about marketplaces.',
   'marketplace.general.help.title': 'Marketplace',
   'marketplace.general.help.paragraph.1':
     'OpenNebula Marketplaces provide a simple way to integrate your cloud with popular application/image providers. Think of them as external datastores. A Marketplace can be:',
@@ -1558,7 +1775,7 @@ module.exports = {
   'marketplace.form.configuration.one.help.paragraph.2':
     'Please, fill the configuration attributes for Markeplace OpenNebula Systems.',
   'marketplace.form.configuration.one.help.link':
-    'See Open Nebula documentation to get more details about OpenNebula Systems marketplaces.',
+    'See OpenNebula documentation to get more details about OpenNebula Systems marketplaces.',
 
   'marketplace.form.configuration.http.url':
     'Base URL of the Marketplace HTTP endpoint',
@@ -1573,7 +1790,7 @@ module.exports = {
   'marketplace.form.configuration.http.help.paragraph.2':
     'Please, fill the configuration attributes for HTTP Marketplace.',
   'marketplace.form.configuration.http.help.link':
-    'See Open Nebula documentation to get more details about HTTP marketplaces.',
+    'See OpenNebula documentation to get more details about HTTP marketplaces.',
 
   'marketplace.form.configuration.s3.accessKey': 'Access Key Id',
   'marketplace.form.configuration.s3.accessKey.tooltip':
@@ -1604,7 +1821,7 @@ module.exports = {
   'marketplace.form.configuration.s3.help.paragraph.2':
     'Please, fill the configuration attributes for S3 Marketplace.',
   'marketplace.form.configuration.s3.help.link':
-    'See Open Nebula documentation to get more details about S3 marketplaces.',
+    'See OpenNebula documentation to get more details about S3 marketplaces.',
 
   'marketplace.form.configuration.dockerhub.info':
     'No configuration attributes are needed for Dockerhub.',
@@ -1613,7 +1830,7 @@ module.exports = {
   'marketplace.form.configuration.dockerhub.help.paragraph.2':
     'Please, fill the configuration attributes for DockerHub Marketplace.',
   'marketplace.form.configuration.dockerhub.help.link':
-    'See Open Nebula documentation to get more details about DockerHub marketplaces.',
+    'See OpenNebula documentation to get more details about DockerHub marketplaces.',
 
   'marketplace.form.configuration.dockerRegistry.url':
     'Marketplace Docker registry url',
@@ -1627,7 +1844,7 @@ module.exports = {
   'marketplace.form.configuration.dockerRegistry.help.paragraph.2':
     'Please, fill the configuration attributes for Docker Registry Marketplace.',
   'marketplace.form.configuration.dockerRegistry.help.link':
-    'See Open Nebula documentation to get more details about Docker Registry marketplaces.',
+    'See OpenNebula documentation to get more details about Docker Registry marketplaces.',
 
   'marketplace.types.one': 'OpenNebula Systems',
   'marketplace.types.http': 'HTTP',
@@ -1660,6 +1877,7 @@ module.exports = {
   ImportAssociateApp: 'Import associated VM templates/images',
   SelectResourceToCreateTheApp: 'Select the resource to create the App',
   SelectImageToCreateTheApp: 'Select the Image to create the App',
+  SelectBackupImage: 'Select backup image',
   SelectVmToCreateTheApp: 'Select the VM to create the App',
   SelectVmTemplateToCreateTheApp: 'Select the VM Template to create the App',
 
@@ -1671,6 +1889,8 @@ module.exports = {
   Persistent: 'Persistent',
   NonPersistent: 'Non Persistent',
   RunningVMs: 'Running VMs',
+  RunningVMsLower: 'Running Vms',
+  Rvms: 'Rvms',
   /* Disk - general */
   DiskType: 'Disk type',
   SizeOnInstantiate: 'Size on instantiate',
@@ -1722,8 +1942,18 @@ module.exports = {
     They will be included in the VM context`,
   Fixed: 'Fixed',
   Range: 'Range',
+  MinRange: 'Min range',
+  MaxRange: 'Max range',
+  RangeFloat: 'Range float',
   List: 'List',
+  ListMultiple: 'List multiple',
+  Boolean: 'Boolean',
+  Number: 'Number',
+  NumberFloat: 'Number float',
+  Text: 'Text',
+  Text64: 'Text64',
   AnyValue: 'Any value',
+  Value: 'Value',
   Options: 'Options',
   UIOptionsConcept:
     'Comma-separated list of options for the drop-down select input',
@@ -1842,7 +2072,7 @@ module.exports = {
   'groups.permissions.help.paragraph.3':
     'On "Permissions - View" select if the users could or not view resources that other users of the group have created.',
   'groups.permissions.help.paragraph.link':
-    'See Open Nebula documentation to get more details about groups and permissions.',
+    'See OpenNebula documentation to get more details about groups and permissions.',
   'groups.views.group.section': 'Views - Groups',
   'groups.views.group.tooltip':
     'Select the default view and the views that any user on the group could use',
@@ -1858,7 +2088,7 @@ module.exports = {
   'groups.views.help.paragraph.3':
     'On "Views - Admin" select the views and the default view for an admin user of the group.',
   'groups.views.help.paragraph.link':
-    'See Open Nebula documentation to get more details about views on Fireedge Sunstone.',
+    'See OpenNebula documentation to get more details about views on Fireedge Sunstone.',
   'groups.actions.edit.admins': 'Edit administrators',
   'groups.actions.edit.admins.form': 'Select the administrators',
   'groups.actions.edit.admins.success': 'Administrators updated',
@@ -1937,7 +2167,7 @@ module.exports = {
     'Select which group is the owner of the resources',
   'acls.form.create.resourcesUser.cluster':
     'Select which cluster is the owner of the resources',
-  'acls.form.create.resourcesUser.identifier': 'Identifier',
+  Identifier: 'Identifier',
 
   'acls.form.create.rights.title': 'Rights',
   'acls.form.create.rights.info':
@@ -1991,6 +2221,113 @@ module.exports = {
   'acls.form.delete.rule': 'Rule with id',
   'acls.form.delete.means': 'that means',
 
-  Identifier: 'Identifier',
   Rights: 'Rights',
+
+  StartDate: 'Start Date',
+  EndDate: 'EndDate',
+
+  /* NIC - card */
+  'nic.card.automatic': 'Automatically selected',
+  'nic.card.management': 'Management interface',
+  'nic.card.rdp': 'Remote Desktop Protocol',
+  'nic.card.ssh': 'Secure Shell Protocol',
+
+  /* Data grid translations */
+  ColumnMenuLabel: 'Menu',
+  ColumnMenuShowColumns: 'Show columns',
+  ColumnMenuManageColumns: 'Manage columns',
+  ColumnMenuFilter: 'Filter',
+  ColumnMenuHideColumn: 'Hide column',
+  ColumnMenuUnsort: 'Unsort',
+  ColumnMenuSortAsc: 'Sort by ASC',
+  ColumnMenuSortDesc: 'Sort by DESC',
+  ColumnHeaderSortIconLabel: 'Sort',
+
+  /* Success messages */
+  SuccessConnectionEstablished: 'Connection established',
+  SuccessDownloadDefaultImage: 'Downloaded default image',
+  SuccessQuotaUpdated: 'Quota updated successfully for ID %s',
+  SuccessRoleActionCompleted: 'Action %s completed on role: %s',
+  SuccessPasswordUpdated: 'Password updated successfully!',
+  SuccessAuthDriver: 'Authentication driver updated successfully!',
+  SuccessPublicSSHKeyUpdated: 'Public SSH Key updated successfully!',
+  SuccessPrivateSSHKeyUpdated: 'Private SSH Key updated successfully!',
+  SuccessPassphraseSSHKeyUpdated: 'SSH Key Passphrase updated successfully!',
+  SuccessACLCreated: 'ACL rule created - #%s',
+  SuccessBackupJobCreated: 'BackupJob created - #%s',
+  SuccessClusterCreated: 'Cluster created - #%s',
+  SuccessClusterUpdated: 'Cluster updated - #%s',
+  SuccessDatastoreCreated: 'Datastore created - #%s',
+  SuccessFileCreated: 'File created - #%s',
+  SuccessGroupCreated: 'Group created - #%s',
+  SuccessGroupUpdated: 'Group updated - #%s',
+  SuccessHostCreated: 'Host created - #%s',
+  SuccessImageCreated: 'Image created - #%s',
+  SuccessMarketplaceAppCreated: 'Marketplace App created: %s',
+  SuccessMarketplaceCreated: 'Marketplace created - #%s',
+  SuccessMarketplaceUpdated: 'Marketplace updated - #%s',
+  SuccessProviderCreated: 'Provider created - #%s',
+  SuccessProviderUpdated: 'Provider updated - #%s',
+  SuccessProviderDeleted: 'Provider deleted - #%s',
+  SuccessDatastoreDeleted: 'Datastore deleted - #%s',
+  SuccessIPAdded: 'IP added %s',
+  SuccessNetworkDeleted: 'Network deleted - #%s',
+  SuccessSecurityGroupCreated: 'Security Group created - #%s',
+  SuccessSecurityGroupUpdated: 'Security Group updated - #%s %s',
+  SuccessServiceTemplateCreated: 'Service Template created - #%s %s',
+  SuccessServiceTemplateUpdated: 'Service Template updated - #%s %s',
+  SuccessServiceTemplateInitiated: 'Service Template initiated - #%s',
+  SuccessShowbackCalculated: 'Showback calculated',
+  SuccessUserCreated: 'User created - #%s',
+  SuccessVDCCreated: 'VDC created - #%s',
+  SuccessVDCUpdated: 'VDC updated - #%s %s',
+  SuccessVnetCreated: 'Virtual Network created - #%s',
+  SuccessVnetUpdated: 'Virtual Network updated - #%s %s',
+  SuccessVrTemplateCreated: 'VR Template created - #%s',
+  SuccessVrTemplateUpdated: 'VR Template updated - #%s %s',
+  SuccessVMGroupCreated: 'VM group created - #%s',
+  SuccessVMGroupUpdated: 'VM group updated - #%s %s',
+  SuccessVMTemplateCreated: 'VM Template created - #%s',
+  SuccessVMTemplateUpdated: 'VM Template updated - #%s %s',
+  SuccessVNetTemplateCreated: 'Virtual Network Template created - #%s',
+  SuccessVNetTemplateUpdated: 'Virtual Network Template updated - #%s %s',
+
+  /* Error messages */
+  ErrorExportingData: 'Error exporting data to %s : %s',
+  ErrorVmNoLocatedVenter: '%s - %s is not located on vCenter Host',
+  ErrorVmTemplateFetching: 'Error fetching VM templates data: %s',
+  ErrorHostFetching: 'Error fetching host data: %s',
+  ErrorUserInputAutocompleteFetch: 'Failed to fetch official suggestions',
+  ErrorQuotaUpdated: 'Error updating quota for ID %s: %s',
+  ErrorQuotaNoValueSpecified: 'No value specified for Resource ID %s',
+  ErrorPasswordUpdated: 'Error updating password: %s',
+  ErrorAuthDriverUpdated: 'Error updating authentication driver: %s',
+  ErrorPublicSSHKeyUpdated: 'Error updating Public SSH Key: %s',
+  ErrorPrivateSSHKeyUpdated: 'Error updating Private SSH Key: %s',
+  ErrorPassphraseSSHKeyUpdated: 'Error updating SSH Key Passphrase: %s',
+  ErrorVmGroupsFetch: 'Failed to fetch vm groups, displaying all VMs',
+  ErrorACLCreated: 'Error creating ACL rule',
+  ErrorClusterOperation: 'Error performing operation on cluster',
+  ErrorGroupCreated: 'Error creating group',
+  ErrorMarketplaceCreated: 'Error creating marketplace',
+  ErrorProviderTemplateSelected:
+    'The template selected has a bad format. Ask your cloud administrator',
+  ErrorShowbackCalculated: 'Error calculating showback: %s',
+  ErrorSupportCredentials: 'Error with support credentials',
+  ErrorVMGroupFetch: 'Failed to fetch VM Group data: %s',
+  ErrorServiceActionRole: 'Action %s failed on role: %s. Error: %s',
+
+  /* Info messages */
+  InfoDisconnected: 'Disconnected',
+  InfoEnableOpenNebulaMarketplace: 'Enabled OpenNebula Public marketplace',
+  InfoServiceActionRole: 'Starting %s action on role: %s',
+  InfoProvisionCreate: 'Creating provision',
+  InfoProvisionConfigure: 'Configuring provision - ID: %s',
+  InfoProvisionDelete: 'Deleting provision - ID: %s',
+  InfoProvisionAddHost: 'Adding %s Host%s',
+  InfoProvisionConfigureHost: 'Configuring host - ID: %s',
+  InfoProvisionDeleteHost: 'Deleting Host - ID: %s',
+  InfoVRTemplateInstantiated: 'VR Template instantiated %s',
+  InfoVMTemplateInstantiated: 'VM Template instantiated x%s - %s',
+  InfoVNTemplateInstantiated: 'VN Template instantiated - %s',
 }

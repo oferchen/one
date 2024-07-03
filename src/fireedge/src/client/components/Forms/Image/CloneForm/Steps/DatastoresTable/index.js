@@ -21,7 +21,7 @@ import { DatastoresTable } from 'client/components/Tables'
 import { SCHEMA } from 'client/components/Forms/Image/CloneForm/Steps/DatastoresTable/schema'
 
 import { Step, decodeBase64 } from 'client/utils'
-import { T } from 'client/constants'
+import { T, DATASTORE_TYPES } from 'client/constants'
 
 export const STEP_ID = 'datastore'
 
@@ -47,6 +47,11 @@ const Content = ({ data, app }) => {
       disableGlobalSort
       displaySelectedRows
       pageSize={5}
+      filter={(datastores) =>
+        // 0 = image
+        datastores?.filter(({ TYPE }) => +TYPE === DATASTORE_TYPES.IMAGE.id) ??
+        []
+      }
       getRowId={(row) => String(row.NAME)}
       initialState={{
         selectedRowIds: { [NAME]: true },

@@ -13,29 +13,43 @@
  * See the License for the specific language governing permissions and       *
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
-import { string, object, ObjectSchema } from 'yup'
-import { Field, getValidationFromFields, encodeBase64 } from 'client/utils'
+import { ObjectSchema, string } from 'yup'
+import { Field, getObjectSchemaFromFields } from 'client/utils'
 import { T, INPUT_TYPES } from 'client/constants'
 
-/** @type {Field} Dockerfile field */
-export const DOCKERFILE = {
-  name: 'PATH',
-  label: T.Dockerfile,
-  type: INPUT_TYPES.DOCKERFILE,
-  cy: 'dockerfile',
+/** @type {Field} Password field */
+const PASSWORD_FIELD = {
+  name: 'password',
+  label: T.Password,
+  type: INPUT_TYPES.PASSWORD,
   validation: string()
     .trim()
     .required()
-    .afterSubmit((value) => encodeBase64(value)),
+    .default(() => undefined),
+  grid: { md: 12 },
+}
+
+/** @type {Field} Confirm Password field */
+const CONFIRM_PASSWORD_FIELD = {
+  name: 'confirmPassword',
+  label: T.ConfirmPassword,
+  type: INPUT_TYPES.PASSWORD,
+  validation: string()
+    .trim()
+    .required()
+    .test('passwords-match', T.PasswordsMustMatch, function (value) {
+      return this.parent.password === value
+    })
+    .default(() => undefined),
   grid: { md: 12 },
 }
 
 /**
- * @returns {Field[]} Fields
+ * @returns {Field[]} List of change password form inputs fields
  */
-export const FIELDS = [DOCKERFILE]
+export const CHANGE_PASSWORD_FIELDS = [PASSWORD_FIELD, CONFIRM_PASSWORD_FIELD]
 
-/**
- * @returns {ObjectSchema} Schema
- */
-export const SCHEMA = object(getValidationFromFields(FIELDS))
+/** @type {ObjectSchema} Change password form object schema */
+export const CHANGE_PASSWORD_SCHEMA = getObjectSchemaFromFields(
+  CHANGE_PASSWORD_FIELDS
+)

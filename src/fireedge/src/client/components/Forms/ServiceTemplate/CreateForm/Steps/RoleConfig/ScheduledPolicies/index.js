@@ -28,7 +28,7 @@ import {
   SCHED_TYPES,
 } from 'client/components/Forms/ServiceTemplate/CreateForm/Steps/RoleConfig/ScheduledPolicies/schema'
 import { FormWithSchema } from 'client/components/Forms'
-import { Translate } from 'client/components/HOC'
+import { Translate, Tr } from 'client/components/HOC'
 import { DeleteCircledOutline, AddCircledOutline } from 'iconoir-react'
 import {
   Accordion,
@@ -102,7 +102,7 @@ const ScheduledPoliciesSection = ({ stepId, selectedRoleIndex }) => {
             filter: 'brightness(90%)',
           }}
         >
-          <Typography variant="body1">{T.ScheduledPolicies}</Typography>
+          <Typography variant="body1">{Tr(T.ScheduledPolicies)}</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <FormProvider {...methods}>
@@ -139,14 +139,18 @@ const ScheduledPoliciesSection = ({ stepId, selectedRoleIndex }) => {
                   { TIMEFORMAT, SCHEDTYPE, ADJUST, MIN, TIMEEXPRESSION },
                   index
                 ) => {
+                  const timeFormatTrans = Tr(TIMEFORMAT)
+
                   const secondaryFields = [
-                    `Time Expression: ${TIMEEXPRESSION}`,
-                    `Adjust: ${ADJUST}`,
-                    `Time Format: ${TIMEFORMAT}`,
-                  ]
+                    TIMEEXPRESSION &&
+                      `${Tr(T.TimeExpression)}: ${TIMEEXPRESSION}`,
+                    ADJUST && `${Tr(T.Adjust)}: ${ADJUST}`,
+                    timeFormatTrans &&
+                      `${Tr(T.TimeFormat)}: ${timeFormatTrans}`,
+                  ].filter(Boolean)
 
                   if (MIN !== undefined) {
-                    secondaryFields?.push(`Min: ${MIN}`)
+                    secondaryFields?.push(`${Tr(T.Min)}: ${MIN}`)
                   }
 
                   return (
@@ -168,7 +172,7 @@ const ScheduledPoliciesSection = ({ stepId, selectedRoleIndex }) => {
                         sx={{ '&:hover': { bgcolor: 'action.hover' } }}
                       >
                         <ListItemText
-                          primary={SCHED_TYPES?.[SCHEDTYPE]}
+                          primary={Tr(SCHED_TYPES?.[SCHEDTYPE])}
                           primaryTypographyProps={{ variant: 'body1' }}
                           secondary={secondaryFields.join(' | ')}
                         />

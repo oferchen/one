@@ -15,7 +15,7 @@
  * ------------------------------------------------------------------------- */
 import { object, string } from 'yup'
 import { getValidationFromFields, arrayToOptions } from 'client/utils'
-import { INPUT_TYPES } from 'client/constants'
+import { INPUT_TYPES, T } from 'client/constants'
 import { SECTION_ID as ADVANCED_SECTION_ID } from 'client/components/Forms/ServiceTemplate/CreateForm/Steps/RoleConfig/AdvancedParameters'
 
 const SHUTDOWN_TYPES = {
@@ -29,10 +29,20 @@ const SHUTDOWN_ENUMS_ONEFLOW = {
   [SHUTDOWN_TYPES.terminateHard]: 'shutdown-hard',
 }
 
+const RDP_FIELD = {
+  name: 'rdp',
+  label: T.Rdp,
+  validation: string()
+    .trim()
+    .notRequired()
+    .default(() => undefined),
+}
+
 const SHUTDOWN_TYPE = {
   name: `${ADVANCED_SECTION_ID}.SHUTDOWNTYPE`,
-  label: 'VM Shutdown action',
-  type: INPUT_TYPES.SELECT,
+  label: T.VMShutdownAction,
+  type: INPUT_TYPES.AUTOCOMPLETE,
+  optionsOnly: true,
   values: arrayToOptions(Object.keys(SHUTDOWN_TYPES), {
     addEmpty: false,
     getText: (key) => SHUTDOWN_TYPES[key],
@@ -49,5 +59,5 @@ const SHUTDOWN_TYPE = {
 export const ADVANCED_PARAMS_FIELDS = [SHUTDOWN_TYPE]
 
 export const ADVANCED_PARAMS_SCHEMA = object(
-  getValidationFromFields(ADVANCED_PARAMS_FIELDS)
+  getValidationFromFields([...ADVANCED_PARAMS_FIELDS, RDP_FIELD])
 )

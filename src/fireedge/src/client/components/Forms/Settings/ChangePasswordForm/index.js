@@ -13,29 +13,12 @@
  * See the License for the specific language governing permissions and       *
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
-import FormWithSchema from 'client/components/Forms/FormWithSchema'
+import { createForm } from 'client/utils'
+import { CHANGE_PASSWORD_SCHEMA, CHANGE_PASSWORD_FIELDS } from './schema'
 
-import {
-  SCHEMA,
-  FIELDS,
-} from 'client/components/Forms/Image/CreateDockerfile/Steps/Dockerfile/schema'
-import { T } from 'client/constants'
+const ChangePasswordForm = createForm(
+  CHANGE_PASSWORD_SCHEMA,
+  CHANGE_PASSWORD_FIELDS
+)
 
-export const STEP_ID = 'dockerfile'
-
-const Content = () => <FormWithSchema id={STEP_ID} fields={FIELDS} />
-
-/**
- * Docker file.
- *
- * @returns {object} Dockerfile step
- */
-const DockerFile = () => ({
-  id: STEP_ID,
-  label: T.Dockerfile,
-  resolver: SCHEMA,
-  optionsValidate: { abortEarly: false },
-  content: Content,
-})
-
-export default DockerFile
+export default ChangePasswordForm

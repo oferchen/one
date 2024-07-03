@@ -26,7 +26,7 @@ using namespace std;
 /* -------------------------------------------------------------------------- */
 
 void RequestManagerRename::request_execute(xmlrpc_c::paramList const& paramList,
-                                          RequestAttributes& att)
+                                           RequestAttributes& att)
 {
     int     oid      = xmlrpc_c::value_int(paramList.getInt(1));
     string  new_name = xmlrpc_c::value_string(paramList.getString(2));
@@ -106,8 +106,6 @@ void RequestManagerRename::request_execute(xmlrpc_c::paramList const& paramList,
         }
 
         pool->update(object.get());
-
-        extra_updates(object.get());
     }
     else
     {

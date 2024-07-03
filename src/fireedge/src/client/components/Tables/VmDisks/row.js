@@ -13,30 +13,28 @@
  * See the License for the specific language governing permissions and       *
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
+import { memo, useMemo } from 'react'
+import PropTypes from 'prop-types'
 
-import FormWithSchema from 'client/components/Forms/FormWithSchema'
+import { DiskCard } from 'client/components/Cards'
 
-import {
-  SCHEMA,
-  FIELDS,
-} from 'client/components/Forms/Image/CreateDockerfile/Steps/General/schema'
-import { T } from 'client/constants'
+const Row = memo(
+  ({ original, value, ...props }) => {
+    const memoDisk = useMemo(() => original, [original])
 
-export const STEP_ID = 'general'
+    return <DiskCard disk={memoDisk} rootProps={props} />
+  },
+  (prev, next) => prev.className === next.className
+)
 
-const Content = () => <FormWithSchema id={STEP_ID} fields={FIELDS} />
+Row.propTypes = {
+  original: PropTypes.object,
+  value: PropTypes.object,
+  isSelected: PropTypes.bool,
+  className: PropTypes.string,
+  handleClick: PropTypes.func,
+}
 
-/**
- * General configuration about VM Template.
- *
- * @returns {object} General configuration step
- */
-const General = () => ({
-  id: STEP_ID,
-  label: T.Configuration,
-  resolver: SCHEMA,
-  optionsValidate: { abortEarly: false },
-  content: Content,
-})
+Row.displayName = 'VmDiskRow'
 
-export default General
+export default Row

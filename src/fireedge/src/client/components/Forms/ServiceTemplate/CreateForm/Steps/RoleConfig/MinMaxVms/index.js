@@ -14,14 +14,14 @@
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
 import PropTypes from 'prop-types'
-import { Component, useMemo, useEffect } from 'react'
+import { Component, useMemo } from 'react'
 import { Box, FormControl } from '@mui/material'
 import { createMinMaxVmsFields } from 'client/components/Forms/ServiceTemplate/CreateForm/Steps/RoleConfig/MinMaxVms/schema'
 import { FormWithSchema } from 'client/components/Forms'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { STEP_ID as ROLE_DEFINITION_ID } from 'client/components/Forms/ServiceTemplate/CreateForm/Steps/Roles'
 
 export const SECTION_ID = 'MINMAXVMS'
+
 /**
  * @param {object} root0 - props
  * @param {string} root0.stepId - Main step ID
@@ -29,17 +29,10 @@ export const SECTION_ID = 'MINMAXVMS'
  * @returns {Component} - component
  */
 const MinMaxVms = ({ stepId, selectedRoleIndex }) => {
-  const { control, setValue, getValues } = useFormContext()
-  const cardinality = useMemo(
-    () =>
-      getValues(ROLE_DEFINITION_ID)?.[selectedRoleIndex]?.CARDINALITY ??
-      undefined,
-    [selectedRoleIndex]
-  )
+  const { control } = useFormContext()
 
   const fields = createMinMaxVmsFields(
-    `${stepId}.${SECTION_ID}.${selectedRoleIndex}`,
-    cardinality
+    `${stepId}.${SECTION_ID}.${selectedRoleIndex}`
   )
 
   useFieldArray({
@@ -50,14 +43,6 @@ const MinMaxVms = ({ stepId, selectedRoleIndex }) => {
   if (fields.length === 0) {
     return null
   }
-
-  // Set default values
-  useEffect(() => {
-    fields.forEach((field) => {
-      const defaultValue = field.validation.default()
-      setValue(field.name, defaultValue || 0)
-    })
-  }, [fields])
 
   return (
     <Box>

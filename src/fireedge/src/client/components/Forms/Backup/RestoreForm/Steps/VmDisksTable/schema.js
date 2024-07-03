@@ -13,43 +13,10 @@
  * See the License for the specific language governing permissions and       *
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
-import Datastore, {
-  STEP_ID as DATASTORE_ID,
-} from 'client/components/Forms/Image/CloneForm/Steps/DatastoresTable'
+import { array, ArraySchema } from 'yup'
 
-import General, {
-  STEP_ID as GENERAL_ID,
-} from 'client/components/Forms/Image/CreateDockerfile/Steps/General'
-
-import Dockerfile, {
-  STEP_ID as DOCKERFILE_ID,
-} from 'client/components/Forms/Image/CreateDockerfile/Steps/Dockerfile'
-
-import { jsonToXml } from 'client/models/Helper'
-import { createSteps, cloneObject, set } from 'client/utils'
-
-const Steps = createSteps([General, Datastore, Dockerfile], {
-  transformBeforeSubmit: (formData) => {
-    const {
-      [GENERAL_ID]: general = {},
-      [DATASTORE_ID]: [datastore] = [],
-      [DOCKERFILE_ID]: dockerfile = {},
-    } = formData ?? {}
-
-    const generalData = cloneObject(general)
-    set(generalData, 'CONTEXT', undefined)
-    set(generalData, 'SIZE', undefined)
-
-    return {
-      template: jsonToXml({
-        ...{
-          PATH: `dockerfile://?fileb64=${dockerfile.PATH}&amp;context=${general.CONTEXT}&amp;size=${general.SIZE}`,
-        },
-        ...generalData,
-      }),
-      datastore: datastore?.ID,
-    }
-  },
-})
-
-export default Steps
+/** @type {ArraySchema} VM Disks table schema */
+export const SCHEMA = array()
+  .notRequired()
+  .nullable()
+  .default(() => [])
