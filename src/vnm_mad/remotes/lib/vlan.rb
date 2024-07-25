@@ -56,7 +56,7 @@ module VNMMAD
                 # Check that no other vlans are connected to this bridge
                 validate_vlan_id if @nic[:conf][:validate_vlan_id]
 
-                # Return if vlan device is already in the bridge.
+                # Skip if vlan device is already in the bridge.
                 next if @bridges[@nic[:bridge]].include? @nic[:vlan_dev]
 
                 # Create vlan device.
@@ -113,15 +113,15 @@ module VNMMAD
                     # Get the name of the vlan device.
                     gen_vlan_dev_name
 
-                    # Return if the bridge doesn't exist because it was already
+                    # Skip if the bridge doesn't exist because it was already
                     # deleted (handles last vm with multiple nics on the same
                     # vlan)
                     next unless @bridges.include? @nic[:bridge]
 
-                    # Return if we want to keep the empty bridge
+                    # Skip if we want to keep the empty bridge
                     next if @nic[:conf][:keep_empty_bridge]
 
-                    # Return if the vlan device is not the only left device in
+                    # Skip if the vlan device is not the only left device in
                     # the bridge.
                     next if (@bridges[@nic[:bridge]].length > 1) || \
                             !@bridges[@nic[:bridge]].include?(@nic[:vlan_dev])
@@ -134,6 +134,7 @@ module VNMMAD
                     # Delete the bridge.
                     OpenNebula.exec_and_log("#{command(:ip)} link delete"\
                         " #{@nic[:bridge]}")
+
                     @bridges.delete(@nic[:bridge])
                 end
             end

@@ -29,7 +29,6 @@ import {
 } from './capacitySchema'
 import { FIELDS as VM_GROUP_FIELDS } from './vmGroupSchema'
 import { FIELDS as OWNERSHIP_FIELDS } from './ownershipSchema'
-import { FIELDS as VCENTER_FIELDS } from './vcenterSchema'
 
 import {
   Section,
@@ -50,17 +49,6 @@ import { T, HYPERVISORS, VmTemplateFeatures } from 'client/constants'
 const SECTIONS = (hypervisor, isUpdate, features, oneConfig, adminGroup) =>
   [
     {
-      id: 'information',
-      legend: T.Information,
-      required: true,
-      fields: disableFields(
-        INFORMATION_FIELDS(isUpdate),
-        '',
-        oneConfig,
-        adminGroup
-      ),
-    },
-    {
       id: 'hypervisor',
       legend: T.Hypervisor,
       required: true,
@@ -72,10 +60,11 @@ const SECTIONS = (hypervisor, isUpdate, features, oneConfig, adminGroup) =>
       ),
     },
     {
-      id: 'capacity',
-      legend: T.Memory,
+      id: 'information',
+      legend: T.Information,
+      required: true,
       fields: disableFields(
-        filterFieldsByHypervisor(MEMORY_FIELDS, hypervisor),
+        INFORMATION_FIELDS(isUpdate),
         '',
         oneConfig,
         adminGroup
@@ -83,8 +72,25 @@ const SECTIONS = (hypervisor, isUpdate, features, oneConfig, adminGroup) =>
     },
     {
       id: 'capacity',
+      legend: T.Memory,
       fields: disableFields(
-        filterFieldsByHypervisor(MEMORY_RESIZE_FIELDS, hypervisor),
+        filterFieldsByHypervisor(
+          [...MEMORY_FIELDS, ...MEMORY_RESIZE_FIELDS],
+          hypervisor
+        ),
+        '',
+        oneConfig,
+        adminGroup
+      ),
+    },
+    {
+      id: 'ownership',
+      legend: T.Ownership,
+      fields: disableFields(
+        filterFieldsByHypervisor(
+          [...OWNERSHIP_FIELDS, ...VM_GROUP_FIELDS],
+          hypervisor
+        ),
         '',
         oneConfig,
         adminGroup
@@ -101,16 +107,6 @@ const SECTIONS = (hypervisor, isUpdate, features, oneConfig, adminGroup) =>
       ),
     },
     {
-      id: 'capacity',
-      legend: T.VirtualCpu,
-      fields: disableFields(
-        filterFieldsByHypervisor(VCPU_FIELDS, hypervisor),
-        '',
-        oneConfig,
-        adminGroup
-      ),
-    },
-    {
       id: 'showback',
       legend: T.Cost,
       fields: disableFields(
@@ -121,30 +117,10 @@ const SECTIONS = (hypervisor, isUpdate, features, oneConfig, adminGroup) =>
       ),
     },
     {
-      id: 'ownership',
-      legend: T.Ownership,
+      id: 'capacity',
+      legend: T.VirtualCpu,
       fields: disableFields(
-        filterFieldsByHypervisor(OWNERSHIP_FIELDS, hypervisor),
-        '',
-        oneConfig,
-        adminGroup
-      ),
-    },
-    {
-      id: 'vm_group',
-      legend: T.VMGroup,
-      fields: disableFields(
-        filterFieldsByHypervisor(VM_GROUP_FIELDS, hypervisor),
-        '',
-        oneConfig,
-        adminGroup
-      ),
-    },
-    {
-      id: 'vcenter',
-      legend: T.vCenterDeployment,
-      fields: disableFields(
-        filterFieldsByHypervisor(VCENTER_FIELDS, hypervisor),
+        filterFieldsByHypervisor(VCPU_FIELDS, hypervisor),
         '',
         oneConfig,
         adminGroup

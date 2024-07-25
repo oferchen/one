@@ -126,17 +126,6 @@ const Actions = () => {
               history.push(path, [RESOURCE_NAMES.VM_TEMPLATE, template])
             },
           },
-          /* {
-            // TODO: Import VM Template from vCenter
-            accessor: VM_TEMPLATE_ACTIONS.IMPORT_DIALOG,
-            tooltip: T.Import,
-            icon: Import,
-            selected: { max: 1 },
-            disabled: true,
-            action: (rows) => {
-              // TODO: go to IMPORT form
-            },
-          }, */
           {
             accessor: VM_TEMPLATE_ACTIONS.UPDATE_DIALOG,
             label: T.Update,
@@ -145,7 +134,7 @@ const Actions = () => {
             color: 'secondary',
             action: (rows) => {
               const vmTemplate = rows?.[0]?.original ?? {}
-              const path = PATH.TEMPLATE.VMS.CREATE
+              const path = PATH.TEMPLATE.VMS.UPDATE
 
               history.push(path, vmTemplate)
             },

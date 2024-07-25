@@ -15,37 +15,40 @@
  * ------------------------------------------------------------------------- */
 /* eslint-disable jsdoc/require-jsdoc */
 import PropTypes from 'prop-types'
-import { useMemo, useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
-import {
-  Lock,
-  User,
-  Group,
-  Db as DatastoreIcon,
-  ModernTv,
-  Pin as PersistentIcon,
-} from 'iconoir-react'
 import { Typography } from '@mui/material'
 import MultipleTags from 'client/components/MultipleTags'
+import { useAuth } from 'client/features/Auth'
 import imageApi, { useUpdateImageMutation } from 'client/features/OneApi/image'
-
-import Timer from 'client/components/Timer'
-import { StatusCircle, StatusChip } from 'client/components/Status'
-import { rowStyles } from 'client/components/Tables/styles'
-import { T } from 'client/constants'
-import { Tr } from 'client/components/HOC'
 import {
-  jsonToXml,
-  getUniqueLabels,
+  Db as DatastoreIcon,
+  Group,
+  Lock,
+  ModernTv,
+  Pin as PersistentIcon,
+  User,
+} from 'iconoir-react'
+
+import { Tr } from 'client/components/HOC'
+import { StatusChip, StatusCircle } from 'client/components/Status'
+import { rowStyles } from 'client/components/Tables/styles'
+import Timer from 'client/components/Timer'
+import { T } from 'client/constants'
+import {
   getColorFromString,
+  getUniqueLabels,
+  jsonToXml,
 } from 'client/models/Helper'
 import { prettyBytes } from 'client/utils'
 
-import * as ImageModel from 'client/models/Image'
 import * as Helper from 'client/models/Helper'
+import * as ImageModel from 'client/models/Image'
 
 const Row = ({ original, value, onClickLabel, ...props }) => {
   const [update] = useUpdateImageMutation()
+  const { labels: userLabels } = useAuth()
+
   const classes = rowStyles()
   const {
     id: ID,
@@ -89,12 +92,19 @@ const Row = ({ original, value, onClickLabel, ...props }) => {
 
   const multiTagLabels = useMemo(
     () =>
-      getUniqueLabels(LABELS).map((label) => ({
-        text: label,
-        stateColor: getColorFromString(label),
-        onClick: onClickLabel,
-        onDelete: handleDeleteLabel,
-      })),
+      getUniqueLabels(LABELS).reduce((acc, label) => {
+        if (userLabels?.includes(label)) {
+          acc.push({
+            text: label,
+            dataCy: `label-${label}`,
+            stateColor: getColorFromString(label),
+            onClick: onClickLabel,
+            onDelete: handleDeleteLabel,
+          })
+        }
+
+        return acc
+      }, []),
     [LABELS, handleDeleteLabel, onClickLabel]
   )
 
@@ -142,7 +152,7 @@ const Row = ({ original, value, onClickLabel, ...props }) => {
             <span>{`${RUNNING_VMS}`}</span>
           </span>
           <span title={`${Tr(T.Size)}: ${SIZE}`}>
-            <span>{`${prettyBytes(+SIZE ?? 0)}`}</span>
+            <span>{`${prettyBytes(+SIZE ?? 0, 'MB')}`}</span>
           </span>
         </div>
       </div>

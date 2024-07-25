@@ -76,7 +76,7 @@ module VNMMAD
             def run!
                 out = ''
 
-                each  do |c|
+                each do |c|
                     out << `#{c}`
 
                     # rubocop:disable Style/SpecialGlobalVars

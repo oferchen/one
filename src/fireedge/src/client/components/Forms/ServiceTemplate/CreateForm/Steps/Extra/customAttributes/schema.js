@@ -89,14 +89,14 @@ const NAME = {
   type: INPUT_TYPES.TEXT,
   validation: string()
     .trim()
-    .lowercase()
-    .matches(/^[a-z0-9]*$/, {
+    .uppercase()
+    .matches(/^[A-Z0-9_]*$/, {
       message:
-        'Name must only contain lowercase alphanumeric characters and no spaces',
+        'Name must only contain uppercase alphanumeric characters and no spaces',
       excludeEmptyString: true,
     })
     .required()
-    .default(() => undefined),
+    .default(() => ''),
   grid: { sm: 2.5, md: 2.5 },
 }
 
