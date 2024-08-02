@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2023, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -20,7 +20,7 @@ import { DatastoresTable } from 'client/components/Tables'
 import { SCHEMA } from 'client/components/Forms/Vm/BackupForm/Steps/DatastoresTable/schema'
 
 import { Step } from 'client/utils'
-import { T } from 'client/constants'
+import { T, VM_EXTENDED_POOL } from 'client/constants'
 
 export const STEP_ID = 'datastore'
 
@@ -66,7 +66,7 @@ const DatastoreStep = (app) => ({
   resolver: SCHEMA,
   defaultDisabled: {
     statePaths: [
-      'oneApi.queries.getVms(undefined).data',
+      `oneApi.queries.getVms({"extended":${VM_EXTENDED_POOL}}).data`,
       'general.selectedIds',
     ],
     condition: (vmsData, selectedIds) =>

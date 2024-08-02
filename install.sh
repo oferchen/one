@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2023, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -121,6 +121,14 @@ if [ -z "$ROOT" ] ; then
     DOCS_LOCATION="/usr/share/doc/one"
     SUNSTONE_MAIN_JS_LOCATION="$VAR_LOCATION/sunstone"
 
+    ONEPROMETHEUS_SYSTEMD_LOCATION="/lib/systemd/system"
+    ONEPROMETHEUS_VAR_ALERTMANAGER_LOCATION="/var/lib/alertmanager"
+    ONEPROMETHEUS_VAR_PROMETHEUS_LOCATION="/var/lib/prometheus"
+
+    ONEPROMETHEUS_DIRS="$ONEPROMETHEUS_SYSTEMD_LOCATION \
+                        $ONEPROMETHEUS_VAR_ALERTMANAGER_LOCATION \
+                        $ONEPROMETHEUS_VAR_PROMETHEUS_LOCATION"
+
     if [ "$CLIENT" = "yes" ]; then
         MAKE_DIRS="$BIN_LOCATION $LIB_LOCATION $ETC_LOCATION"
 
@@ -161,7 +169,7 @@ if [ -z "$ROOT" ] ; then
                    $LOG_LOCATION $RUN_LOCATION $LOCK_LOCATION \
                    $SYSTEM_DS_LOCATION $DEFAULT_DS_LOCATION $MAN_LOCATION \
                    $VM_LOCATION $ONEGATE_LOCATION $ONEFLOW_LOCATION \
-                   $SUNSTONE_MAIN_JS_LOCATION $ONEHEM_LOCATION"
+                   $SUNSTONE_MAIN_JS_LOCATION $ONEHEM_LOCATION $ONEPROMETHEUS_DIRS"
 
         DELETE_DIRS="$LIB_LOCATION $ETC_LOCATION $LOG_LOCATION $VAR_LOCATION \
                      $RUN_LOCATION $SHARE_DIRS"
@@ -190,6 +198,14 @@ else
     VM_LOCATION="$VAR_LOCATION/vms"
     DOCS_LOCATION="$ROOT/share/doc"
     SUNSTONE_MAIN_JS_LOCATION="$VAR_LOCATION/sunstone"
+
+    ONEPROMETHEUS_SYSTEMD_LOCATION="$LIB_LOCATION/systemd"
+    ONEPROMETHEUS_VAR_ALERTMANAGER_LOCATION="$ROOT/var/alertmanager"
+    ONEPROMETHEUS_VAR_PROMETHEUS_LOCATION="$ROOT/var/prometheus"
+
+    ONEPROMETHEUS_DIRS="$ONEPROMETHEUS_SYSTEMD_LOCATION \
+                        $ONEPROMETHEUS_VAR_ALERTMANAGER_LOCATION \
+                        $ONEPROMETHEUS_VAR_PROMETHEUS_LOCATION"
 
     if [ "$CLIENT" = "yes" ]; then
         MAKE_DIRS="$BIN_LOCATION $LIB_LOCATION $ETC_LOCATION"
@@ -220,7 +236,8 @@ else
                    $INCLUDE_LOCATION $SHARE_LOCATION $SYSTEM_DS_LOCATION \
                    $DEFAULT_DS_LOCATION $MAN_LOCATION $DOCS_LOCATION \
                    $VM_LOCATION $ONEGATE_LOCATION $ONEFLOW_LOCATION \
-                   $SUNSTONE_MAIN_JS_LOCATION $ONEHEM_LOCATION $LOCK_LOCATION $RUN_LOCATION"
+                   $SUNSTONE_MAIN_JS_LOCATION $ONEHEM_LOCATION $LOCK_LOCATION $RUN_LOCATION \
+                   $ONEPROMETHEUS_DIRS"
 
         DELETE_DIRS="$MAKE_DIRS"
 
@@ -244,8 +261,10 @@ SHARE_DIRS="$SHARE_LOCATION/examples \
             $SHARE_LOCATION/start-scripts \
             $SHARE_LOCATION/conf \
             $SHARE_LOCATION/context \
-            $SHARE_LOCATION/onecfg
-            $SHARE_LOCATION/onecfg/etc"
+            $SHARE_LOCATION/onecfg \
+            $SHARE_LOCATION/onecfg/etc \
+            $SHARE_LOCATION/grafana \
+            $SHARE_LOCATION/prometheus"
 
 ETC_DIRS="$ETC_LOCATION/vmm_exec \
           $ETC_LOCATION/hm \
@@ -264,7 +283,9 @@ ETC_DIRS="$ETC_LOCATION/vmm_exec \
           $ETC_LOCATION/fireedge/sunstone/admin \
           $ETC_LOCATION/fireedge/sunstone/user \
           $ETC_LOCATION/fireedge/sunstone/groupadmin \
-          $ETC_LOCATION/fireedge/sunstone/cloud"
+          $ETC_LOCATION/fireedge/sunstone/cloud \
+          $ETC_LOCATION/alertmanager \
+          $ETC_LOCATION/prometheus"
 
 LIB_DIRS="$LIB_LOCATION/ruby \
           $LIB_LOCATION/ruby/opennebula \
@@ -308,7 +329,12 @@ LIB_DIRS="$LIB_LOCATION/ruby \
           $LIB_LOCATION/onecfg/lib/config/type \
           $LIB_LOCATION/onecfg/lib/config/type/augeas \
           $LIB_LOCATION/onecfg/lib/config/type/yaml \
-          $LIB_LOCATION/onecfg/lib/patch"
+          $LIB_LOCATION/onecfg/lib/patch \
+          $LIB_LOCATION/alertmanager \
+          $LIB_LOCATION/libvirt_exporter \
+          $LIB_LOCATION/node_exporter \
+          $LIB_LOCATION/opennebula_exporter \
+          $LIB_LOCATION/prometheus"
 
 VAR_DIRS="$VAR_LOCATION/remotes \
           $VAR_LOCATION/remotes/etc \
@@ -461,6 +487,7 @@ VAR_DIRS="$VAR_LOCATION/remotes \
           $VAR_LOCATION/remotes/datastore/vcenter \
           $VAR_LOCATION/remotes/datastore/iscsi_libvirt \
           $VAR_LOCATION/remotes/datastore/rsync \
+          $VAR_LOCATION/remotes/datastore/restic \
           $VAR_LOCATION/remotes/market \
           $VAR_LOCATION/remotes/market/http \
           $VAR_LOCATION/remotes/market/one \
@@ -661,6 +688,7 @@ INSTALL_FILES=(
     DATASTORE_DRIVER_VCENTER_SCRIPTS:$VAR_LOCATION/remotes/datastore/vcenter
     DATASTORE_DRIVER_ISCSI_SCRIPTS:$VAR_LOCATION/remotes/datastore/iscsi_libvirt
     DATASTORE_DRIVER_RSYNC_SCRIPTS:$VAR_LOCATION/remotes/datastore/rsync
+    DATASTORE_DRIVER_RESTIC_SCRIPTS:$VAR_LOCATION/remotes/datastore/restic
     DATASTORE_DRIVER_ETC_SCRIPTS:$VAR_LOCATION/remotes/etc/datastore
     MARKETPLACE_DRIVER_HTTP_SCRIPTS:$VAR_LOCATION/remotes/market/http
     MARKETPLACE_DRIVER_ETC_HTTP_SCRIPTS:$VAR_LOCATION/remotes/etc/market/http
@@ -712,6 +740,29 @@ INSTALL_FILES=(
     SSH_SH_OVERRIDE_LIB_FILES:$LIB_LOCATION/sh/override
     SSH_SHARE_FILES:$SHARE_LOCATION/ssh
     CONTEXT_SHARE:$SHARE_LOCATION/context
+
+    ONEPROMETHEUS_ALERTMANAGER_BIN_FILES:$BIN_LOCATION
+    ONEPROMETHEUS_ALERTMANAGER_CONFIG_FILES:$ETC_LOCATION/alertmanager
+    ONEPROMETHEUS_ALERTMANAGER_FILES:$LIB_LOCATION/alertmanager
+    ONEPROMETHEUS_ALERTMANAGER_SYSTEMD_FILES:$ONEPROMETHEUS_SYSTEMD_LOCATION
+
+    ONEPROMETHEUS_GRAFANA_FILES:$SHARE_LOCATION/grafana
+
+    ONEPROMETHEUS_LIBVIRT_EXPORTER_FILES:$LIB_LOCATION/libvirt_exporter
+    ONEPROMETHEUS_LIBVIRT_EXPORTER_SYSTEMD_FILES:$ONEPROMETHEUS_SYSTEMD_LOCATION
+
+    ONEPROMETHEUS_NODE_EXPORTER_BIN_FILES:$BIN_LOCATION
+    ONEPROMETHEUS_NODE_EXPORTER_FILES:$LIB_LOCATION/node_exporter
+    ONEPROMETHEUS_NODE_EXPORTER_SYSTEMD_FILES:$ONEPROMETHEUS_SYSTEMD_LOCATION
+
+    ONEPROMETHEUS_OPENNEBULA_EXPORTER_FILES:$LIB_LOCATION/opennebula_exporter
+    ONEPROMETHEUS_OPENNEBULA_EXPORTER_SYSTEMD_FILES:$ONEPROMETHEUS_SYSTEMD_LOCATION
+
+    ONEPROMETHEUS_PROMETHEUS_BIN_FILES:$BIN_LOCATION
+    ONEPROMETHEUS_PROMETHEUS_CONFIG_FILES:$ETC_LOCATION/prometheus
+    ONEPROMETHEUS_PROMETHEUS_FILES:$LIB_LOCATION/prometheus
+    ONEPROMETHEUS_PROMETHEUS_SHARE_FILES:$SHARE_LOCATION/prometheus
+    ONEPROMETHEUS_PROMETHEUS_SYSTEMD_FILES:$ONEPROMETHEUS_SYSTEMD_LOCATION
 )
 
 INSTALL_CLIENT_FILES=(
@@ -2018,6 +2069,23 @@ DATASTORE_DRIVER_RSYNC_SCRIPTS="src/datastore_mad/remotes/rsync/cp \
                          src/datastore_mad/remotes/rsync/increment_flatten \
                          src/datastore_mad/remotes/rsync/ls"
 
+DATASTORE_DRIVER_RESTIC_SCRIPTS="src/datastore_mad/remotes/restic/cp \
+                                 src/datastore_mad/remotes/restic/mkfs \
+                                 src/datastore_mad/remotes/restic/stat \
+                                 src/datastore_mad/remotes/restic/rm \
+                                 src/datastore_mad/remotes/restic/monitor \
+                                 src/datastore_mad/remotes/restic/snap_delete \
+                                 src/datastore_mad/remotes/restic/snap_revert \
+                                 src/datastore_mad/remotes/restic/snap_flatten \
+                                 src/datastore_mad/remotes/restic/clone \
+                                 src/datastore_mad/remotes/restic/restore \
+                                 src/datastore_mad/remotes/restic/restic.rb \
+                                 src/datastore_mad/remotes/restic/restic \
+                                 src/datastore_mad/remotes/restic/increment_flatten \
+                                 src/datastore_mad/remotes/restic/backup \
+                                 src/datastore_mad/remotes/restic/backup_cancel \
+                                 src/datastore_mad/remotes/restic/ls"
+
 DATASTORE_DRIVER_ETC_SCRIPTS="src/datastore_mad/remotes/datastore.conf"
 
 #-------------------------------------------------------------------------------
@@ -2975,6 +3043,53 @@ XSD_FILES="share/doc/xsd/acct.xsd \
            share/doc/xsd/zone_pool.xsd"
 
 CONTEXT_SHARE=$(find share/context/ -type f \( ! -iname "*.sh" ! -iname "SConstruct" \))
+
+#-------------------------------------------------------------------------------
+# PROMETHEUS
+#-------------------------------------------------------------------------------
+
+# ALERTMANAGER
+ONEPROMETHEUS_ALERTMANAGER_BIN_FILES="src/oneprometheus/vendor/alertmanager/alertmanager \
+                                      src/oneprometheus/vendor/alertmanager/amtool"
+ONEPROMETHEUS_ALERTMANAGER_CONFIG_FILES="src/oneprometheus/alertmanager/etc/alertmanager.yml"
+ONEPROMETHEUS_ALERTMANAGER_FILES="src/oneprometheus/vendor/alertmanager/LICENSE \
+                                  src/oneprometheus/vendor/alertmanager/NOTICE"
+ONEPROMETHEUS_ALERTMANAGER_SYSTEMD_FILES="src/oneprometheus/alertmanager/systemd/opennebula-alertmanager.service"
+
+# GRAFANA
+ONEPROMETHEUS_GRAFANA_FILES="src/oneprometheus/grafana/share/dashboards/"
+
+# LIBVIRT-EXPORTER
+ONEPROMETHEUS_LIBVIRT_EXPORTER_FILES="src/oneprometheus/opennebula-libvirt-exporter/src/libvirt_collector.rb \
+                                      src/oneprometheus/opennebula-libvirt-exporter/src/libvirt_exporter.rb"
+ONEPROMETHEUS_LIBVIRT_EXPORTER_SYSTEMD_FILES="src/oneprometheus/opennebula-libvirt-exporter/systemd/opennebula-libvirt-exporter.service"
+
+# NODE-EXPORTER
+ONEPROMETHEUS_NODE_EXPORTER_BIN_FILES="src/oneprometheus/vendor/node_exporter/node_exporter"
+ONEPROMETHEUS_NODE_EXPORTER_FILES="src/oneprometheus/vendor/node_exporter/LICENSE \
+                                   src/oneprometheus/vendor/node_exporter/NOTICE"
+ONEPROMETHEUS_NODE_EXPORTER_SYSTEMD_FILES="src/oneprometheus/node_exporter/systemd/opennebula-node-exporter.service"
+
+# OPENNEBULA-EXPORTER
+ONEPROMETHEUS_OPENNEBULA_EXPORTER_FILES="src/oneprometheus/opennebula-exporter/src/opennebula_collector.rb \
+                                         src/oneprometheus/opennebula-exporter/src/opennebula_datastore_collector.rb \
+                                         src/oneprometheus/opennebula-exporter/src/opennebula_exporter.rb \
+                                         src/oneprometheus/opennebula-exporter/src/opennebula_host_collector.rb \
+                                         src/oneprometheus/opennebula-exporter/src/opennebula_server_collector.rb \
+                                         src/oneprometheus/opennebula-exporter/src/opennebula_vm_collector.rb"
+ONEPROMETHEUS_OPENNEBULA_EXPORTER_SYSTEMD_FILES="src/oneprometheus/opennebula-exporter/systemd/opennebula-exporter.service"
+
+# PROMETHEUS
+ONEPROMETHEUS_PROMETHEUS_BIN_FILES="src/oneprometheus/vendor/prometheus/prometheus \
+                                    src/oneprometheus/vendor/prometheus/promtool"
+ONEPROMETHEUS_PROMETHEUS_CONFIG_FILES="src/oneprometheus/prometheus/etc/prometheus.yml \
+                                       src/oneprometheus/prometheus/etc/rules.yml"
+ONEPROMETHEUS_PROMETHEUS_FILES="src/oneprometheus/vendor/prometheus/console_libraries/ \
+                                src/oneprometheus/vendor/prometheus/consoles/ \
+                                src/oneprometheus/vendor/prometheus/LICENSE \
+                                src/oneprometheus/vendor/prometheus/NOTICE"
+ONEPROMETHEUS_PROMETHEUS_SHARE_FILES="src/oneprometheus/prometheus/share/patch_datasources.rb"
+ONEPROMETHEUS_PROMETHEUS_SYSTEMD_FILES="src/oneprometheus/prometheus/systemd/opennebula-prometheus.service"
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
