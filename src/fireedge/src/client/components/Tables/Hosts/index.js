@@ -15,17 +15,22 @@
  * ------------------------------------------------------------------------- */
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react'
 
-import { useViews } from 'client/features/Auth'
-import { useGetHostsQuery } from 'client/features/OneApi/host'
-
+import { Tr } from 'client/components/HOC'
+import MultipleTags from 'client/components/MultipleTags'
+import { LinearProgressWithLabel, StatusCircle } from 'client/components/Status'
 import EnhancedTable, { createColumns } from 'client/components/Tables/Enhanced'
 import {
   areArraysEqual,
   sortStateTables,
 } from 'client/components/Tables/Enhanced/Utils/DataTableUtils'
+import WrapperRow from 'client/components/Tables/Enhanced/WrapperRow'
 import HostColumns from 'client/components/Tables/Hosts/columns'
 import HostRow from 'client/components/Tables/Hosts/row'
-import { RESOURCE_NAMES } from 'client/constants'
+import { HOST_THRESHOLD, RESOURCE_NAMES, T } from 'client/constants'
+import { useAuth, useViews } from 'client/features/Auth'
+import { useGetHostsQuery } from 'client/features/OneApi/host'
+import { getColorFromString, getUniqueLabels } from 'client/models/Helper'
+import { getAllocatedInfo, getState } from 'client/models/Host'
 import { useFormContext } from 'react-hook-form'
 
 const DEFAULT_DATA_CY = 'hosts'
@@ -136,6 +141,90 @@ const HostsTable = (props) => {
   })
   useEffect(() => refetch(), [])
 
+  const listHeader = [
+    {
+      header: '',
+      id: 'status-icon',
+      accessor: (host) => {
+        const { color: stateColor, name: stateName } = getState(host)
+
+        return <StatusCircle color={stateColor} tooltip={stateName} />
+      },
+    },
+    { header: T.ID, id: 'id', accessor: 'ID' },
+    { header: T.Name, id: 'name', accessor: 'NAME' },
+    { header: T.Cluster, id: 'cluster', accessor: 'CLUSTER' },
+    {
+      header: T.Rvms,
+      id: 'rvms',
+      accessor: ({ HOST_SHARE }) => HOST_SHARE?.RUNNING_VMS || 0,
+    },
+    {
+      header: T.AllocatedCpu,
+      id: 'cpu',
+      accessor: (host) => {
+        const { percentCpuUsed, percentCpuLabel, colorCpu } =
+          getAllocatedInfo(host)
+
+        return (
+          <LinearProgressWithLabel
+            value={percentCpuUsed}
+            high={HOST_THRESHOLD.CPU.high}
+            low={HOST_THRESHOLD.CPU.low}
+            label={percentCpuLabel}
+            title={`${Tr(T.AllocatedCpu)}`}
+            color={colorCpu}
+          />
+        )
+      },
+    },
+    {
+      header: T.AllocatedMemory,
+      id: 'memory',
+      accessor: (host) => {
+        const { percentMemUsed, percentMemLabel, colorMem } =
+          getAllocatedInfo(host)
+
+        return (
+          <LinearProgressWithLabel
+            value={percentMemUsed}
+            high={HOST_THRESHOLD.MEMORY.high}
+            low={HOST_THRESHOLD.MEMORY.low}
+            label={percentMemLabel}
+            title={`${Tr(T.AllocatedMemory)}`}
+            color={colorMem}
+          />
+        )
+      },
+    },
+    {
+      header: T.Labels,
+      id: 'labels',
+      accessor: ({ TEMPLATE: { LABELS } = {} }) => {
+        const { labels: userLabels } = useAuth()
+
+        const labels = useMemo(
+          () =>
+            getUniqueLabels(LABELS).reduce((acc, label) => {
+              if (userLabels?.includes(label)) {
+                acc.push({
+                  text: label,
+                  dataCy: `label-${label}`,
+                  stateColor: getColorFromString(label),
+                })
+              }
+
+              return acc
+            }, []),
+          [LABELS]
+        )
+
+        return <MultipleTags tags={labels} truncateText={10} />
+      },
+    },
+  ]
+  const { component, header } = WrapperRow(HostRow)
+
   return (
     <EnhancedTable
       columns={columns}
@@ -145,9 +234,10 @@ const HostsTable = (props) => {
       refetch={refetch}
       isLoading={isFetching}
       getRowId={(row) => String(row.ID)}
-      RowComponent={HostRow}
       dataDepend={values}
       zoneId={zoneId}
+      RowComponent={component}
+      headerList={header && listHeader}
       {...rest}
     />
   )

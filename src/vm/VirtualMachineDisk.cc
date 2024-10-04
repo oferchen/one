@@ -1599,6 +1599,11 @@ bool VirtualMachineDisks::backup_increment(bool do_volatile)
 
         one_util::toupper(type);
 
+        if (type == "RBD")
+        {
+            continue;
+        }
+
         if ((type == "SWAP") || ((type == "FS") && !do_volatile))
         {
             continue;
@@ -1629,6 +1634,7 @@ void VirtualMachineDisks::backup_disk_ids(bool do_volatile, std::vector<int>& id
 
         if ((type == "SWAP") ||
             (type == "CDROM") ||
+            (type == "RBD_CDROM") ||
             ((type == "FS") && !do_volatile))
         {
             continue;

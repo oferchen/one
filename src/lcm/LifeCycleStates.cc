@@ -54,10 +54,11 @@ void LifeCycleManager::start_prolog_migrate(VirtualMachine* vm)
 
     vmpool->update_history(vm);
 
-    vm->get_capacity(sr);
-
     if ( vm->get_hid() != vm->get_previous_hid() )
     {
+        Template tmpl;
+        vm->get_previous_capacity(sr, tmpl);
+
         hpool->del_capacity(vm->get_previous_hid(), sr);
 
         vm->release_previous_vnc_port();
@@ -839,6 +840,8 @@ void LifeCycleManager::trigger_prolog_failure(int vid)
                 vm->set_prolog_stime(t);
 
                 hpool->add_capacity(vm->get_hid(), sr);
+
+                vm->set_vm_info();
 
                 vmpool->insert_history(vm.get());
 
@@ -2704,6 +2707,12 @@ void LifeCycleManager::trigger_disk_restore_success(int vid)
                 vm->delete_snapshots(vm_quotas_snp);
                 vm->delete_non_persistent_disk_snapshots(vm_quotas_snp, ds_quotas_snp);
 
+                if ( vm->backups().configured() )
+                {
+                    vm->backups().last_increment_id(-1);
+                    vm->backups().incremental_backup_id(-1);
+                }
+
                 vm->set_state(VirtualMachine::POWEROFF);
                 vm->log("LCM", Log::INFO, "VM restore operation completed.");
             }
@@ -2819,7 +2828,7 @@ static int create_backup_image(VirtualMachine * vm, string& msg)
     itmp->add("NAME",   oss.str());
     itmp->add("SOURCE", backups.last_backup_id());
     itmp->add("SIZE",   backups.last_backup_size());
-    itmp->add("FORMAT", "raw");
+    itmp->add("FORMAT", backups.last_backup_format());
     itmp->add("VM_ID",  vm->get_oid());
     itmp->add("TYPE",   Image::type_to_str(Image::BACKUP));
 

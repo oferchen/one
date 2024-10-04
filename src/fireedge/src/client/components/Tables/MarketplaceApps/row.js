@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and       *
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
-import { memo, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
+import { memo, useCallback, useMemo } from 'react'
 
+import { MarketplaceAppCard } from 'client/components/Cards'
 import api, {
   useUpdateAppMutation,
 } from 'client/features/OneApi/marketplaceApp'
-import { MarketplaceAppCard } from 'client/components/Cards'
 import { jsonToXml } from 'client/models/Helper'
 
 const Row = memo(
-  ({ original, value, onClickLabel, ...props }) => {
+  ({ original, value, onClickLabel, headerList, rowDataCy, ...props }) => {
     const [update] = useUpdateAppMutation()
 
     const state = api.endpoints.getMarketplaceApps.useQueryState(undefined, {
@@ -64,6 +64,8 @@ Row.propTypes = {
   className: PropTypes.string,
   onClick: PropTypes.func,
   onClickLabel: PropTypes.func,
+  headerList: PropTypes.oneOfType([PropTypes.array, PropTypes.bool]),
+  rowDataCy: PropTypes.string,
 }
 
 Row.displayName = 'MarketplaceAppRow'

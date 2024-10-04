@@ -413,6 +413,11 @@ public:
     // ------------------------------------------------------------------------
     // History
     // ------------------------------------------------------------------------
+    /*
+     *  Loads all VM history recordsfrom the database
+    */
+    int load_history(SqlDB * db);
+
     /**
      *  Adds a new history record an writes it in the database.
      */
@@ -1034,9 +1039,18 @@ public:
 
     /**
      *  Get the VM physical capacity requirements for the host.
-     *    @param sr the HostShareCapacity to store the capacity request.
+     *    @param sr the HostShareCapacity to store the capacity request. The sr
+     *      use pointers to VM template, do not destroy the VM object before sr.
      */
     void get_capacity(HostShareCapacity &sr) const;
+
+    /**
+     *  Get the VM physical capacity from the previous history
+     *    @param sr the HostShareCapacity to store the capacity request.
+     *    @param tmpl temporary object, to hold pointers, do not release the tmpl
+     *      before the HostShareCapacity
+     */
+    void get_previous_capacity(HostShareCapacity &sr, Template &tmpl) const;
 
     /**
      * Adds automatic placement requirements: Datastore and Cluster
@@ -1826,17 +1840,12 @@ private:
     /**
      *  History record, for the current host
      */
-    History *   history;
+    std::unique_ptr<History> history;
 
     /**
      *  History record, for the previous host
      */
-    History *   previous_history;
-
-    /**
-     *  Complete set of history records for the VM
-     */
-    std::vector<History *> history_records;
+    std::unique_ptr<History> previous_history;
 
     /**
      *  VirtualMachine disks

@@ -427,6 +427,9 @@ module.exports = {
 
   /* sections - settings */
   Settings: 'Settings',
+  AppliesTo: 'Applies To',
+  AllowedOperations: 'Allowed operations',
+  AffectedResources: 'Affected resources',
   Schema: 'Schema',
   Dark: 'Dark',
   Light: 'Light',
@@ -516,6 +519,7 @@ module.exports = {
   ResolutionTicket:
     'You should just use this. If you want to place the ticket as solved',
   AddComment: 'Add comment to close the ticket',
+  MarkAsclosed: 'Please consider to this request resolved',
 
   /* sections - system */
   User: 'User',
@@ -590,6 +594,7 @@ module.exports = {
   Zone: 'Zone',
   Zones: 'Zones',
   Vnet: 'Vnet',
+  Vnets: 'Vnets',
   'cluster.form.create.general.help.title': 'Cluster',
   'cluster.form.create.general.help.paragraph.1.1':
     'Clusters group together hosts, datastores and virtual networks that are configured to work together. A cluster is used to:',
@@ -655,6 +660,7 @@ module.exports = {
   Images: 'Images',
   File: 'File',
   Files: 'Files',
+  FileTooLarge: 'File too large',
   Marketplace: 'Marketplace',
   Marketplaces: 'Marketplaces',
   App: 'App',
@@ -700,7 +706,7 @@ module.exports = {
   Ceph: 'Ceph',
   LVM: 'LVM',
   RawDeviceMapping: 'Raw device mapping',
-  StorageRestic: 'Backup - Restic (EE only)',
+  StorageRestic: 'Backup - Restic',
   StorageRsync: 'Backup - RSync',
 
   /* datastore */
@@ -927,6 +933,7 @@ module.exports = {
   Reconnect: 'Reconnect',
   FullScreen: 'Full screen',
   FullScreenInfo: 'Full screen information in datatables',
+  RowStyle: 'DataTables Row Style',
   Screenshot: 'Screenshot',
   LastConnection: 'Last connection',
   PartOf: 'Part of',
@@ -1104,6 +1111,10 @@ module.exports = {
   VmTemplateNameHelper: `
     Defaults to 'template name-<vmid>' when empty.
     When creating several VMs, the wildcard %%idx will be
+    replaced with a number starting from 0`,
+  VmVrTemplateNameHelper: `
+    Defaults to 'template name-<vmid>' when empty.
+    When creating several VMs, the wildcard %%i will be
     replaced with a number starting from 0`,
   NumberOfInstances: 'Number of instances',
   NumberOfVms: 'Number of VMs',
@@ -1479,6 +1490,7 @@ module.exports = {
   AutomaticDeletion: 'Automatic deletion',
   Role: 'Role',
   Roles: 'Roles',
+  Card: 'Card',
   Cardinality: 'Cardinality',
   Parents: 'Parents',
   ParentRoles: 'Parent roles',

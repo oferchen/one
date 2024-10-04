@@ -19,7 +19,6 @@ import { memo, useCallback, useMemo } from 'react'
 import { ConsoleButton } from 'client/components/Buttons'
 import { VirtualMachineCard } from 'client/components/Cards'
 import { VM_ACTIONS, VM_EXTENDED_POOL } from 'client/constants'
-import { useGeneral } from 'client/features/General'
 import vmApi, { useUpdateUserTemplateMutation } from 'client/features/OneApi/vm'
 import { jsonToXml } from 'client/models/Helper'
 
@@ -27,10 +26,15 @@ const { VNC, RDP, SSH, VMRC } = VM_ACTIONS
 const CONNECTION_TYPES = [VNC, RDP, SSH, VMRC]
 
 const Row = memo(
-  ({ original, value, onClickLabel, globalErrors, ...props }) => {
-    // This is for not showing VNC coneections when the user use other zone.
-    const { zone, defaultZone } = useGeneral()
-
+  ({
+    original,
+    value,
+    onClickLabel,
+    globalErrors,
+    headerList,
+    rowDataCy,
+    ...props
+  }) => {
     const [update] = useUpdateUserTemplateMutation()
 
     const state = vmApi.endpoints.getVms.useQueryState(
@@ -64,14 +68,13 @@ const Row = memo(
         globalErrors={globalErrors}
         actions={
           <>
-            {zone === defaultZone &&
-              CONNECTION_TYPES.map((connectionType) => (
-                <ConsoleButton
-                  key={`${memoVm}-${connectionType}`}
-                  connectionType={connectionType}
-                  vm={memoVm}
-                />
-              ))}
+            {CONNECTION_TYPES.map((connectionType) => (
+              <ConsoleButton
+                key={`${memoVm}-${connectionType}`}
+                connectionType={connectionType}
+                vm={memoVm}
+              />
+            ))}
           </>
         }
       />
@@ -88,6 +91,8 @@ Row.propTypes = {
   onClick: PropTypes.func,
   onClickLabel: PropTypes.func,
   globalErrors: PropTypes.array,
+  headerList: PropTypes.oneOfType([PropTypes.array, PropTypes.bool]),
+  rowDataCy: PropTypes.string,
 }
 
 Row.displayName = 'VirtualMachineRow'
