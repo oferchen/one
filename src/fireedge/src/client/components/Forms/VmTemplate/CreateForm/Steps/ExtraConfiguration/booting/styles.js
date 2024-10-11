@@ -13,25 +13,35 @@
  * See the License for the specific language governing permissions and       *
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
-import { ObjectSchema } from 'yup'
+import makeStyles from '@mui/styles/makeStyles'
 
-import {
-  getObjectSchemaFromFields,
-  createFieldsFromUserInputs,
-} from 'client/utils'
-import { Field, UserInputObject } from 'client/constants'
+const useStyles = makeStyles((theme) => ({
+  root: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gridTemplateRows: 'auto',
+    gap: theme.spacing(1),
+    overflow: 'auto',
+    [theme.breakpoints.down('sm')]: {
+      gridTemplateColumns: '1fr',
+    },
+  },
+  'os-cpu-model': {
+    gridColumn: '1 / span 2',
+    // gridRow: '1',
+    padding: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      gridColumn: '1 / -1',
+    },
+  },
+  'os-raw': {
+    gridColumn: '1 / span 2',
+    // gridRow: '1',
+    padding: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      gridColumn: '1 / -1',
+    },
+  },
+}))
 
-/**
- * @param {UserInputObject[]} userInputs - User inputs
- * @returns {Field[]} User inputs in Field format
- */
-const FIELDS = (userInputs = []) => createFieldsFromUserInputs(userInputs)
-
-/**
- * @param {UserInputObject[]} userInputs - User inputs
- * @returns {ObjectSchema} User inputs schema
- */
-const SCHEMA = (userInputs = []) =>
-  getObjectSchemaFromFields(FIELDS(userInputs))
-
-export { FIELDS, SCHEMA }
+export default useStyles

@@ -1256,7 +1256,7 @@ module.exports = {
   FirmwareSecure: 'Firmware secure',
   CpuModel: 'CPU Model',
   CpuFeature: 'CPU Features',
-  CustomPath: 'Customize with path',
+  CustomPath: 'Custom path',
   /* VM Template schema - OS & CPU - kernel */
   Kernel: 'Kernel',
   KernelExpression: 'Kernel expression',
@@ -1938,6 +1938,8 @@ module.exports = {
   PasswordHash: 'Password Hash',
   TokenPasswordHash: 'Token Password Hash',
   UserInputs: 'User Inputs',
+  UserInputsService: 'Service Inputs',
+  UserInputsRole: 'Roles Inputs',
   UserInputsConcept: `
     These attributes must be provided by the user when a new VM is instantiated.
     They will be included in the VM context`,
@@ -1963,6 +1965,7 @@ module.exports = {
   DefaultValue: 'Default value',
   Mandatory: 'Mandatory',
   PressKeysToAddAValue: 'Press any of the following keys to add a value: %s',
+  MandatoryUserInputs: 'Show only mandatory inputs',
   /** Security Groups */
   Start: 'Start',
   Rules: 'Rules',
