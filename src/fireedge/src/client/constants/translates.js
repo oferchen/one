@@ -197,8 +197,8 @@ module.exports = {
   SelectDisk: 'Select disk',
   SelectDockerHubTag: 'Select DockerHub image tag (default latest)',
   SelectGroup: 'Select a group',
-  SelectHost: 'Select host',
-  SelectHosts: 'Select hosts',
+  SelectHost: 'Select Host',
+  SelectHosts: 'Select Hosts',
   SelectMarketplace: 'Select Marketplace',
   SelectNetwork: 'Select a network',
   SelectVirtualNetworks: 'Select virtual networks',
@@ -939,6 +939,8 @@ module.exports = {
   PartOf: 'Part of',
   GuacamoleState: 'Guacamole State',
   VMRCState: 'VMRC State',
+  FontSize: 'Font Size',
+  FontName: 'Font Name',
   RdpLayout: 'RDP keyboard layout',
   RdpResizeMethod: 'RDP resize method',
   DisableAudio: 'Disable audio',
@@ -1220,6 +1222,8 @@ module.exports = {
     sort the suitable datastores for this VM`,
   Stripping: 'Stripping',
   LoadAware: 'Load-aware',
+  Loaded: 'Loaded',
+  Loading: 'Loading',
   Packing: 'Packing',
   /* VM Template schema - Backup */
   BackupVolatileDisksQuestion: 'Backup volatile disks?',
@@ -1335,6 +1339,7 @@ module.exports = {
   Inputs: 'Inputs',
   PciDevices: 'PCI Devices',
   Profile: 'Profile',
+  OsProfile: 'Operating System Profile',
   DeviceName: 'Device name',
   Device: 'Device',
   DeviceTooltip:
@@ -1372,6 +1377,7 @@ module.exports = {
   Keymap: 'Keymap',
   GenerateRandomPassword: 'Generate random password',
   Command: 'Command',
+  SSHCommand: 'SSH Command',
   Bus: 'BUS',
   ConnectionAttributes: '%s connection attributes',
   /* VM Template schema - Input/Output - graphics - Remote Connections Keymaps */
@@ -1868,6 +1874,7 @@ module.exports = {
   ImportIntoDatastore: 'Import into Datastore',
   DownloadAppToOpenNebula: 'Download App to OpenNebula',
   DownloadApp: 'Download App',
+  DownloadConecctionFile: 'Download connection File',
   DownloadDefaultImage: 'Download Default Image',
   ExportAppNameConcept:
     'Name that the resource will get for description purposes',
