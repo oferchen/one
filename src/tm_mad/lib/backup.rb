@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -17,8 +17,128 @@
 #--------------------------------------------------------------------------- #
 
 require 'CommandManager'
+require 'rexml/document'
+
+require_relative 'kvm'
+require_relative 'shell'
 
 module TransferManager
+
+    # Virtual Machine containing the disks to backup
+    class VM
+
+        include TransferManager::KVM
+
+        def initialize(vm_xml, disks)
+            @xml   = vm_xml
+            @disks = disks
+        end
+
+        def backup_disks_sh(options = {})
+            disks       = options[:disks]
+            backup_dir  = options[:backup_dir]
+            ds          = options[:ds]
+            live        = options[:live]
+            deploy_id   = options[:deploy_id]
+            bridge_host = options[:bridge_host]
+
+            snap_cmd = ''
+            expo_cmd = ''
+
+            snap_clup = ''
+            expo_clup = ''
+
+            xml_vm = REXML::Document.new(@xml).root
+
+            bk_img_id_elem = xml_vm.elements['BACKUPS/BACKUP_IDS/ID']
+            bk_img_id      = bk_img_id_elem&.text&.strip
+
+            if bk_img_id.nil? || bk_img_id.empty?
+                disk_format = 'qcow2'
+            else
+                client = OpenNebula::Client.new
+                bk_img = OpenNebula::Image.new_with_id(bk_img_id, client)
+
+                bk_img.info
+
+                disk_format = bk_img['FORMAT']&.strip
+            end
+
+            @disks.compact.each do |d|
+                did = d.id
+                next unless disks.include? did.to_s
+
+                # Pass the format for this disk (or nil if not set)
+                cmds = d.backup_cmds(backup_dir, ds, live, disk_format)
+                return nil unless cmds
+
+                snap_cmd  << cmds[:snapshot].to_s
+                expo_cmd  << cmds[:export].to_s
+                snap_clup << cmds[:snapshot_clup].to_s
+                expo_clup << cmds[:export_clup].to_s
+            end
+
+            freeze, thaw =
+                if live
+                    fsfreeze(@xml, deploy_id)
+                else
+                    ['', '']
+                end
+
+            eos1 = <<~EOS1
+                set -ex -o pipefail
+
+                # ----------------------
+                # Prepare backup folder
+                # ----------------------
+                [ -d #{backup_dir} ] && rm -rf #{backup_dir}
+
+                mkdir -p #{backup_dir}
+
+                echo "#{Base64.encode64(@xml)}" > #{backup_dir}/vm.xml
+
+                # --------------------------------
+                # Create snapshots for disks
+                # --------------------------------
+                #{freeze}
+
+                #{snap_cmd}
+
+                #{thaw}
+            EOS1
+
+            eos2 = <<~EOS2
+                set -ex -o pipefail
+
+                # --------------------------
+                # Export, convert & cleanup
+                # --------------------------
+                [ -d #{backup_dir} ] || mkdir -p #{backup_dir}
+
+                #{expo_cmd}
+
+                cd #{backup_dir}
+
+                #{expo_clup}
+            EOS2
+
+            eos3 = <<~EOS3
+                set -ex -o pipefail
+
+                # --------------------------
+                # Cleanup snapshots
+                # --------------------------
+                #{snap_clup}
+            EOS3
+
+            [
+                [nil, eos1],
+                [bridge_host, eos2],
+                [nil, eos3]
+            ].map {|(host, cmd)| TransferManager::Shell.sshwrap(host, cmd) }.join("\n\n")
+        end
+
+    end
 
     # This class includes methods manage backup images
     class BackupImage
@@ -87,6 +207,33 @@ module TransferManager
                 to_clean = paths.first(paths.size - 1)
                                 .map {|p| "'#{p}'" } # single-quoted
                 script << "rm -f #{to_clean.join(' ')}" unless to_clean.empty?
+            end
+
+            script.join("\n")
+        end
+
+        # Given a sorted list of qcow2 files with backing chain properly reconstructed,
+        # return a shell recipe that commits all increments to the base image.
+        # rubocop:disable Style/ParallelAssignment, Layout/LineLength
+        def self.commit_chain(paths, opts = {})
+            return '' unless paths.size > 1
+
+            opts = {
+                :workdir  => nil,
+                :sparsify => false
+            }.merge!(opts)
+
+            firstdir, firstbase = File.split(paths.first)
+            first = "#{opts[:workdir] || firstdir}/#{firstbase}"
+
+            lastdir, lastbase = File.split(paths.last)
+            last = "#{opts[:workdir] || lastdir}/#{lastbase}"
+
+            script = []
+            script << "qemu-img commit -f qcow2 -b '#{first}' '#{last}'"
+
+            if opts[:sparsify]
+                script << "[ $(type -P virt-sparsify) ] && virt-sparsify -q --in-place '#{first}'"
             end
 
             script.join("\n")

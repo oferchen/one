@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -26,9 +26,9 @@ module VNMMAD
         ]
 
         def initialize(vm, xpath_filter, deploy_id = nil)
-            @locking = true
-
             super(vm, xpath_filter, deploy_id)
+
+            @locking = true
         end
 
         # Activate the driver and creates bridges and tags devices as needed.
@@ -189,7 +189,7 @@ module VNMMAD
 
                 # Configure the Bridge (only once)
                 LocalCommand.run_sh("#{command(:ip)} link set dev #{@nic[:bridge]}"\
-                    ' type bridge vlan_filtering 1', nil, 2)
+                    ' type bridge vlan_filtering 1', :ok_rcs => 2)
 
                 set_vlan_filter(@nic[:phydev], nil, vlan_set)
 

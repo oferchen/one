@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -19,6 +19,7 @@
 #include "NebulaLog.h"
 #include "ClusterTemplate.h"
 #include "DatastorePool.h"
+#include "Plan.h"
 
 #include <stdexcept>
 
@@ -96,7 +97,7 @@ error_bootstrap:
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int ClusterPool::allocate(string name, int * oid, string& error_str)
+int ClusterPool::allocate(const string& name, int * oid, string& error_str)
 {
     *oid = -1;
 
@@ -370,7 +371,3 @@ int ClusterPool::del_from_cluster(PoolObjectSQL::ObjectType type, Cluster* clust
 
     return 0;
 }
-
-/* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
-

@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2023, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and        #
 # limitations under the License.                                             #
 #--------------------------------------------------------------------------- #
+
+require 'base64'
 
 # rubocop:disable Layout/HeredocIndentation, Layout/IndentationWidth
 module TransferManager
@@ -294,6 +296,22 @@ module TransferManager
           echo "${cmd}"
         }
       SCRIPT
+    end
+
+    def self.sshwrap(host, cmd)
+      cmd << "\n"
+      if host.nil?
+        cmd
+      else
+        <<~EOF.strip
+          ssh '#{host}' '\
+              script="$(mktemp)"; \
+              echo "#{Base64.strict_encode64(cmd)}" | base64 -d > "$script"; \
+              trap "rm $script" EXIT; \
+              bash "$script"; \
+          '
+        EOF
+      end
     end
 
   end

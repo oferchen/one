@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -19,9 +19,12 @@ const {
   getConfig,
   getVmmConfigHandler,
   getTemplateProfiles,
+  getTabManifestHandler,
+  getDefaultLabelsHandler,
 } = require('server/routes/api/system/functions')
 
-const { SYSTEM_CONFIG, VMM_CONFIG, PROFILES } = Actions
+const { SYSTEM_CONFIG, VMM_CONFIG, TAB_CONFIG, PROFILES, DEFAULT_LABELS } =
+  Actions
 
 module.exports = [
   {
@@ -35,5 +38,13 @@ module.exports = [
   {
     ...Commands[PROFILES],
     action: getTemplateProfiles,
+  },
+  {
+    ...Commands[TAB_CONFIG],
+    action: getTabManifestHandler,
+  },
+  {
+    ...Commands[DEFAULT_LABELS],
+    action: getDefaultLabelsHandler,
   },
 ]

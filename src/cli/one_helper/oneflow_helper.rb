@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -28,14 +28,12 @@ class OneFlowHelper < OpenNebulaHelper::OneHelper
     #
     # @options [Hash] CLI options
     def client(options)
-        flow_client = Service::Client.new(
+        Service::Client.new(
             :username => options[:username],
             :password => options[:password],
             :url => options[:server],
             :user_agent => USER_AGENT
         )
-        flow_client.set_content_type('application/json')
-        flow_client
     end
 
     # Get service pool table

@@ -3,7 +3,7 @@
 # frozen_string_literal: true
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -21,40 +21,24 @@
 # ------------------------------------------------------------------------------
 # Entry code for TM Action scripts. Setups gems library path and common helpers
 # ------------------------------------------------------------------------------
-ONE_LOCATION = ENV['ONE_LOCATION']
+ONE_LOCATION = ENV['ONE_LOCATION'] unless defined?(ONE_LOCATION)
 
 if !ONE_LOCATION
-    RUBY_LIB_LOCATION = '/usr/lib/one/ruby'
-    GEMS_LOCATION     = '/usr/share/one/gems'
-    VMDIR             = '/var/lib/one'
-    CONFIG_FILE       = '/var/lib/one/config'
-    DS_DIR            = '/var/lib/one/datastores'
+    RUBY_LIB_LOCATION ||= '/usr/lib/one/ruby'
+    GEMS_LOCATION     ||= '/usr/share/one/gems'
+    VMDIR             ||= '/var/lib/one'
+    CONFIG_FILE       ||= '/var/lib/one/config'
+    DS_DIR            ||= '/var/lib/one/datastores'
 else
-    RUBY_LIB_LOCATION = "#{ONE_LOCATION}/lib/ruby"
-    GEMS_LOCATION     = "#{ONE_LOCATION}/share/gems"
-    VMDIR             = "#{ONE_LOCATION}/var"
-    CONFIG_FILE       = "#{ONE_LOCATION}/var/config"
-    DS_DIR            = "#{ONE_LOCATION}/var/datastores"
+    RUBY_LIB_LOCATION ||= "#{ONE_LOCATION}/lib/ruby"
+    GEMS_LOCATION     ||= "#{ONE_LOCATION}/share/gems"
+    VMDIR             ||= "#{ONE_LOCATION}/var"
+    CONFIG_FILE       ||= "#{ONE_LOCATION}/var/config"
+    DS_DIR            ||= "#{ONE_LOCATION}/var/datastores"
 end
 
 # %%RUBYGEMS_SETUP_BEGIN%%
-if File.directory?(GEMS_LOCATION)
-    real_gems_path = File.realpath(GEMS_LOCATION)
-    if !defined?(Gem) || Gem.path != [real_gems_path]
-        $LOAD_PATH.reject! {|l| l =~ /vendor_ruby/ }
-
-        # Suppress warnings from Rubygems
-        # https://github.com/OpenNebula/one/issues/5379
-        begin
-            verb = $VERBOSE
-            $VERBOSE = nil
-            require 'rubygems'
-            Gem.use_paths(real_gems_path)
-        ensure
-            $VERBOSE = verb
-        end
-    end
-end
+require 'load_opennebula_paths'
 # %%RUBYGEMS_SETUP_END%%
 
 $LOAD_PATH << RUBY_LIB_LOCATION
@@ -259,7 +243,8 @@ module TransferManager
                 :ok_rc    => nil,
                 :forward  => false,
                 :nostdout => true,
-                :nostderr => true
+                :nostderr => true,
+                :silent   => false
             }.merge!(options)
 
             script = <<~EOS
@@ -287,6 +272,8 @@ module TransferManager
                  end
 
             success = rc.code == 0 || (opt[:ok_rc] && opt[:ok_rc] == rc.code)
+
+            return rc if opt[:silent]
 
             unless success
                 logger = OpenNebula::DriverLogger

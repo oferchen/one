@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -229,23 +229,10 @@ const generateGuacamoleSession = (
 const getVncSettings = (vmInfo) => {
   const config = {}
 
-  if (`${vmInfo.USER_TEMPLATE?.HYPERVISOR}`.toLowerCase() === 'vcenter') {
-    const esxHost = vmInfo?.MONITORING?.VCENTER_ESX_HOST
-
-    if (!esxHost) {
-      return {
-        error: `Could not determine the vCenter ESX host where
-        the VM is running. Wait till the VCENTER_ESX_HOST attribute is
-        retrieved once the host has been monitored`,
-      }
-    }
-
-    config.hostname = esxHost
-  }
-
   if (!config.hostname) {
-    const lastHistory = [vmInfo.HISTORY_RECORDS?.HISTORY ?? []].flat().at(-1)
-    config.hostname = lastHistory?.HOSTNAME ?? 'localhost'
+    const data = [].concat(...[vmInfo.HISTORY_RECORDS?.HISTORY ?? []])
+    const lastRecord = data[data.length - 1]
+    config.hostname = lastRecord?.HOSTNAME ?? 'localhost'
   }
 
   config.port = vmInfo.TEMPLATE?.GRAPHICS?.PORT ?? '5900'
@@ -257,17 +244,17 @@ const getVncSettings = (vmInfo) => {
 const getSshSettings = (vmInfo, authUser) => {
   const config = {}
 
-  const nics = [
-    vmInfo.TEMPLATE?.NIC ?? [],
-    vmInfo.TEMPLATE?.NIC_ALIAS ?? [],
-  ].flat()
+  const nics = [].concat(
+    ...[vmInfo.TEMPLATE?.NIC ?? [], vmInfo.TEMPLATE?.NIC_ALIAS ?? []]
+  )
 
   const nicWithExternalPortRange = nics.find((nic) => !nic.EXTERNAL_PORT_RANGE)
   const { EXTERNAL_PORT_RANGE } = nicWithExternalPortRange ?? {}
 
   if (EXTERNAL_PORT_RANGE) {
-    const lastHistory = [vmInfo.HISTORY_RECORDS?.HISTORY ?? []].flat().at(-1)
-    const lastHostname = lastHistory?.HOSTNAME
+    const data = [].concat(...[vmInfo.HISTORY_RECORDS?.HISTORY ?? []])
+    const lastRecord = data[data.length - 1]
+    const lastHostname = lastRecord?.HOSTNAME
 
     if (lastHostname) {
       config.hostname = lastHostname
@@ -300,10 +287,9 @@ const getSshSettings = (vmInfo, authUser) => {
 const getRdpSettings = (vmInfo) => {
   const config = {}
 
-  const nics = [
-    vmInfo.TEMPLATE?.NIC ?? [],
-    vmInfo.TEMPLATE?.NIC_ALIAS ?? [],
-  ].flat()
+  const nics = [].concat(
+    ...[vmInfo.TEMPLATE?.NIC ?? [], vmInfo.TEMPLATE?.NIC_ALIAS ?? []]
+  )
 
   const nicWithRdp = nics.find(({ RDP }) => `${RDP}`.toLowerCase() === 'yes')
   config.hostname = nicWithRdp?.EXTERNAL_IP ?? nicWithRdp?.IP
@@ -311,7 +297,7 @@ const getRdpSettings = (vmInfo) => {
   if (!config.hostname) {
     return { error: 'Wrong configuration. Cannot find a NIC with RDP' }
   }
-
+  config.security = vmInfo.TEMPLATE?.CONTEXT?.RDP_SECURITY ?? 'rdp'
   config.port = vmInfo.TEMPLATE?.CONTEXT?.RDP_PORT ?? '3389'
   config.username = vmInfo.TEMPLATE?.CONTEXT?.USERNAME
   config.password = vmInfo.TEMPLATE?.CONTEXT?.PASSWORD
@@ -339,8 +325,6 @@ const getRdpSettings = (vmInfo) => {
     nicWithRdp?.RDP_DISABLE_OFFSCREEN_CACHING?.toLowerCase() === 'yes'
   config['disable-glyph-caching'] =
     nicWithRdp?.RDP_DISABLE_GLYPH_CACHING?.toLowerCase() === 'yes'
-
-  if (config.username && config.password) config.security = 'rdp'
 
   return config
 }

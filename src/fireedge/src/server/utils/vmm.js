@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -17,64 +17,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const { global } = require('window-or-global')
 
-/**
- * Parse custom configuration file format.
- *
- * @param {string} fileContent - Content of the configuration file.
- * @returns {object} Parsed configuration object.
- */
-const parseConfigFileContent = (fileContent) => {
-  const lines = fileContent
-    .split('\n')
-    .filter((line) => line && !line.startsWith('#'))
-
-  const config = {}
-  let inBlock = false
-  let currentKey = ''
-  let blockContent = []
-  let blockEndMarker = ''
-
-  lines.forEach((line) => {
-    if (!line) return
-
-    const trimLine = line?.trim()
-
-    if (!inBlock) {
-      const [key, ...rest] = trimLine.split('=')
-      const value = rest.join('=').trim()
-
-      if (key && /^[A-Za-z0-9_]+$/.test(key.trim())) {
-        currentKey = key.trim()
-
-        if (value.startsWith('[') || value.startsWith('"')) {
-          blockEndMarker = value.startsWith('[') ? ']' : '"'
-          if (value.endsWith(blockEndMarker) && value.length > 1) {
-            config[currentKey] = value
-          } else {
-            inBlock = true
-            blockContent = [value]
-          }
-        } else {
-          config[currentKey] = value
-        }
-      }
-    } else {
-      blockContent.push(line)
-      if (line.endsWith(blockEndMarker)) {
-        config[currentKey] = blockContent.join('\n')
-        inBlock = false
-        currentKey = ''
-        blockContent = []
-      }
-    }
-  })
-
-  if (inBlock && currentKey) {
-    config[currentKey] = blockContent?.join('\n')
-  }
-
-  return config
-}
+const { parseConfigFile } = require('server/utils/general')
 
 /**
  * Get the configuration for a specific hypervisor.
@@ -96,7 +39,7 @@ const getVmmConfig = async (hypervisor) => {
 
   try {
     const fileContent = await fs.readFile(configFilePath, 'utf-8')
-    const config = parseConfigFileContent(fileContent)
+    const config = parseConfigFile(fileContent)
 
     return config
   } catch (error) {

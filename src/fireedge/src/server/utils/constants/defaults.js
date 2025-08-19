@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -16,9 +16,7 @@
 
 const appName = 'fireedge'
 const appNameSunstone = 'sunstone'
-const appNameProvision = 'provision'
 const internalSunstonePath = `${appName}/${appNameSunstone}`
-const internalProvisionPath = `${appName}/${appNameProvision}`
 const baseUrl = `${appName ? `/${appName}/` : '/'}`
 const baseUrlWebsockets = 'websockets/'
 const severityPrepend = 'severity_'
@@ -34,7 +32,6 @@ const default2FAOpennebulaVar = 'TWO_FACTOR_AUTH_SECRET'
 const defaultIp = 'localhost'
 const protocol = 'http'
 const defaults = {
-  defaultAppNameProvision: appNameProvision,
   defaultTypeCrypto: 'aes-256-cbc',
   /**
    * Empty function.
@@ -62,14 +59,6 @@ const defaults = {
   defaultFilesWebsockets: {
     hooks: {
       path: `${baseUrl}${baseUrlWebsockets}hooks`,
-      methods: ['GET', 'POST'],
-    },
-    [appNameProvision]: {
-      path: `${baseUrl}${baseUrlWebsockets}${appNameProvision}`,
-      methods: ['GET', 'POST'],
-    },
-    vcenter: {
-      path: `${baseUrl}${baseUrlWebsockets}vcenter`,
       methods: ['GET', 'POST'],
     },
   },
@@ -109,23 +98,22 @@ const defaults = {
     parseAttributeValue: true,
     trimValues: true,
   },
-  defaultCommandProvision: `one${appNameProvision}`,
-  defaultCommandProvisionTemplate: `one${appNameProvision}-template`,
-  defaultCommandProvider: 'oneprovider',
-  defaultCommandVcenter: 'onevcenter',
   defaultCommandVM: 'onevm',
   defaultCommandMarketApp: 'onemarketapp',
-  defaultFolderTmpProvision: 'tmp',
   defaultHideCredentials: true,
   defaultHideCredentialReplacer: '****',
   defaultOneFlowServer: `${protocol}://${defaultIp}:2474`,
   defaultSunstonePath: internalSunstonePath,
-  defaultProvisionPath: internalProvisionPath,
-  defaultProvidersConfigPath: 'providers.d',
   defaultLogsLevels: ['error', 'warm', 'info', 'http', 'verbose', 'debug'],
   defaultLogMessageLength: 100,
   defaultTypeLog: 'prod',
   defaultWebpackMode: 'development',
+  defaultSensitiveDataForXMLRPC: [
+    {
+      regex: /^user\.allocate/,
+      maskIndex: 1,
+    },
+  ],
   defaultProductionWebpackMode: 'production',
   defaultWebpackDevTool: 'inline-source-map',
   defaultLogPath: '/var/log/one',
@@ -134,12 +122,11 @@ const defaults = {
   defaultSharePath: '/usr/share/one',
   defaultVarPath: '/var/lib/one',
   defaultEtcPath: '/etc/one',
+  defaultLabelsFilename: 'default-labels.yaml',
   defaultLogFilename: `${appName}.log`,
   defaultKeyFilename: `${appName}_key`,
   defaultSunstoneAuth: 'sunstone_auth',
-  defaultVmrcTokens: 'sunstone_vmrc_tokens/',
   defaultBaseURL: '',
-  endpointVmrc: `${baseUrl}vmrc`,
   endpointGuacamole: `${baseUrl}guacamole`,
   endpointExternalGuacamole: `${baseUrl}external-guacamole`,
   defaultNamespace: 'one',
@@ -161,26 +148,34 @@ const defaults = {
   defaultPort: 2616,
   defaultEvents: ['SIGINT', 'SIGTERM'],
 
+  /** REMOTE MODULES */
+  defaultRemoteModules: [
+    'UtilsModule',
+    'ConstantsModule',
+    'ContainersModule',
+    'ComponentsModule',
+    'FeaturesModule',
+    'ProvidersModule',
+    'ModelsModule',
+    'HooksModule',
+  ],
+
   /** CONFIGURATION FILE */
+  defaultTabManifestFilename: 'tab-manifest.yaml',
+  defaultRemoteModulesConfigFilename: 'remotes-config.yaml',
   defaultConfigFile: `${appName}-server.conf`,
   defaultSunstoneViews: `${appNameSunstone}-views.yaml`,
   defaultSunstoneConfig: `${appNameSunstone}-server.conf`,
-  defaultProvisionConfig: `${appNameProvision}-server.conf`,
   defaultApiTimeout: 45000,
   protectedConfigData: {
     [appNameSunstone]: [
       'support_url',
-      'vcenter_prepend_command',
       'sunstone_prepend',
       'guacd',
       'tmpdir',
       'max_upload_file_size',
       'proxy',
       'token_remote_support',
-    ],
-    [appNameProvision]: [
-      'oneprovision_prepend_command',
-      'oneprovision_optional_create_command',
     ],
   },
 

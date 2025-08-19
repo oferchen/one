@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -31,9 +31,9 @@ module VNMMAD
         ]
 
         def initialize(vm_tpl, xpath_filter, deploy_id = nil)
-            @locking = true
-
             super(vm_tpl, xpath_filter, deploy_id)
+
+            @locking = true
         end
 
         # Activate the driver and creates bridges and tags devices as needed.
@@ -133,7 +133,7 @@ module VNMMAD
                 TProxy.setup_tproxy(@nic, :down) if guests.count < 1
 
                 # Skip the bridge removal (on demand or when still in use).
-                next if @nic[:conf][:keep_empty_bridge] || guests.count > 0
+                next if @nic[:conf][:keep_empty_bridge] || guests.any?
 
                 # Delete the vlan device.
                 delete_vlan_dev

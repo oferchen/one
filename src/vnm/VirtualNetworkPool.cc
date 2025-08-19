@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -508,7 +508,6 @@ int VirtualNetworkPool::set_vlan_id(VirtualNetwork * vn)
             break;
 
         case VirtualNetwork::VLAN:
-        case VirtualNetwork::VCENTER:
         case VirtualNetwork::OVSWITCH:
             rc = set_8021Q_id(vn->get_oid(), vn->vlan_id, vn->vlan_id_automatic);
 
@@ -525,7 +524,6 @@ int VirtualNetworkPool::set_vlan_id(VirtualNetwork * vn)
         case VirtualNetwork::NONE:
         case VirtualNetwork::DUMMY:
         case VirtualNetwork::BRIDGE:
-        case VirtualNetwork::EBTABLES:
         case VirtualNetwork::FW:
             break;
     }
@@ -565,7 +563,6 @@ void VirtualNetworkPool::release_vlan_id(VirtualNetwork *vn)
     switch (VirtualNetwork::str_to_driver(vn->vn_mad))
     {
         case VirtualNetwork::VLAN:
-        case VirtualNetwork::VCENTER:
         case VirtualNetwork::OVSWITCH:
         case VirtualNetwork::OVSWITCH_VXLAN:
             if ( bitmap.select(VLAN_BITMAP_ID, db) != 0 )
@@ -579,7 +576,6 @@ void VirtualNetworkPool::release_vlan_id(VirtualNetwork *vn)
 
         case VirtualNetwork::NONE:
         case VirtualNetwork::DUMMY:
-        case VirtualNetwork::EBTABLES:
         case VirtualNetwork::FW:
         case VirtualNetwork::VXLAN:
         case VirtualNetwork::BRIDGE:

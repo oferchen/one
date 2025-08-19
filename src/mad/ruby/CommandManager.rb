@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -72,7 +72,7 @@ class GenericCommand
         return unless @logger
 
         case @logger.arity
-        when 2
+        when 2,-2
             @logger.call(message, all)
         when 1
             @logger.call(message)
@@ -159,7 +159,14 @@ class GenericCommand
             mutex = Mutex.new
 
             out_reader = Thread.new { o.read }
-            err_reader = Thread.new { e.read }
+            err_reader = Thread.new do
+                begin
+                    e.read
+                rescue StandardError
+                    ''
+                end
+            end
+
             terminator = Thread.new do
                 if @timeout && @timeout>0
                     begin
@@ -203,7 +210,7 @@ class GenericCommand
             raise terminator_e if terminator_e
 
             # return values
-            [out_reader.value, err_reader.value, t.value]
+            [out_reader.value || '', err_reader.value || '', t.value]
         end
     end
 

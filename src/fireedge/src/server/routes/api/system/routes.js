@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -25,11 +25,15 @@ const { GET } = httpMethod
 const SYSTEM_CONFIG = 'system.config'
 const VMM_CONFIG = 'vmm.config'
 const PROFILES = 'system.profiles'
+const TAB_CONFIG = 'tab.config'
+const DEFAULT_LABELS = 'defaultlabels.config'
 
 const Actions = {
   SYSTEM_CONFIG,
   VMM_CONFIG,
   PROFILES,
+  TAB_CONFIG,
+  DEFAULT_LABELS,
 }
 
 module.exports = {
@@ -60,6 +64,16 @@ module.exports = {
           default: '-1',
         },
       },
+      auth: true,
+    },
+    [TAB_CONFIG]: {
+      path: `${basepath}/tab-manifest`,
+      httpMethod: GET,
+      auth: false,
+    },
+    [DEFAULT_LABELS]: {
+      path: `${basepath}/default-labels`,
+      httpMethod: GET,
       auth: true,
     },
   },

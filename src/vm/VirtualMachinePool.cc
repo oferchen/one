@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -21,6 +21,7 @@
 #include "HookStateVM.h"
 #include "HookManager.h"
 #include "ImageManager.h"
+#include "SchedulerManager.h"
 #include "HostPool.h"
 
 #include <sstream>
@@ -96,7 +97,7 @@ int VirtualMachinePool::allocate(
     // ------------------------------------------------------------------------
     VirtualMachine vm {-1, uid, gid, uname, gname, umask, move(vm_template)};
 
-    if ( _submit_on_hold == true || on_hold )
+    if ( _submit_on_hold || on_hold )
     {
         vm.state = VirtualMachine::HOLD;
 
@@ -126,6 +127,11 @@ int VirtualMachinePool::allocate(
             std::string event = HookStateVM::format_message(vm2.get());
 
             Nebula::instance().get_hm()->trigger_send_event(event);
+        }
+
+        if ( !_submit_on_hold && !on_hold)
+        {
+            Nebula::instance().get_sm()->trigger_place();
         }
     }
 
@@ -163,7 +169,12 @@ int VirtualMachinePool::get_pending(
     ostringstream   os;
     string          where;
 
-    os << "state = " << VirtualMachine::PENDING;
+    // Pending or ((poweroff or running or unknown) and resched))
+    os << "state = " << VirtualMachine::PENDING << " OR "
+       << "((state = " << VirtualMachine::POWEROFF << " OR "
+       << " lcm_state = " << VirtualMachine::RUNNING << " OR "
+       << " lcm_state = " << VirtualMachine::UNKNOWN <<") AND "
+       << " resched = 1 )";
 
     where = os.str();
 
@@ -180,6 +191,43 @@ int VirtualMachinePool::get_backup(vector<int>& oids)
     os << "state = " << VirtualMachine::ACTIVE
        << " and ( lcm_state = " << VirtualMachine::BACKUP
        << " or lcm_state = " << VirtualMachine::BACKUP_POWEROFF << " )";
+
+    return PoolSQL::search(oids, one_db::vm_table, os.str());
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+int VirtualMachinePool::get_cluster_vms(int user_id, int group_id, int cid,
+                                        vector<int>& oids)
+{
+    ostringstream   os;
+
+    // Filter user
+    if (user_id >= 0)
+    {
+        os << "uid = " << user_id << " AND ";
+    }
+
+    // Filter group
+    if (group_id >= 0)
+    {
+        os << "gid = " << group_id << " AND ";
+    }
+
+    // Filter VM state
+    os << "state != " << VirtualMachine::DONE << " AND ";
+
+    // Filter cluster
+    if (db->supports(SqlDB::SqlFeature::JSON_QUERY))
+    {
+        os << "JSON_CONTAINS(body_json, '\"" << cid
+           << "\"', '$.VM.HISTORY_RECORDS.HISTORY[0].CID')";
+    }
+    else
+    {
+        os << "short_body LIKE '%<CID>" << cid << "</CID>%'";
+    }
 
     return PoolSQL::search(oids, one_db::vm_table, os.str());
 }
@@ -906,17 +954,14 @@ int VirtualMachinePool::calculate_showback(
 
 void VirtualMachinePool::delete_attach_disk(std::unique_ptr<VirtualMachine> vm)
 {
-    int uid;
-    int gid;
-    int oid;
-
     VirtualMachineDisk * disk = nullptr;
 
     disk = vm->delete_attach_disk();
 
-    uid  = vm->get_uid();
-    gid  = vm->get_gid();
-    oid  = vm->get_oid();
+    int uid  = vm->get_uid();
+    int gid  = vm->get_gid();
+    int oid  = vm->get_oid();
+    int cid  = vm->get_cid();
 
     vm->set_vm_info();
 
@@ -946,6 +991,7 @@ void VirtualMachinePool::delete_attach_disk(std::unique_ptr<VirtualMachine> vm)
 
     Template tmpl;
 
+    tmpl.add("CLUSTER_ID", cid);
     tmpl.set(disk->vector_attribute());
 
     if (disk->is_volatile())
@@ -971,7 +1017,7 @@ void VirtualMachinePool::delete_attach_disk(std::unique_ptr<VirtualMachine> vm)
 
         const Snapshots * snaps = disk->get_snapshots();
 
-        if (snaps != nullptr)
+        if (snaps != nullptr && disk->persistent_snapshots())
         {
             imagem->set_image_snapshots(image_id, *snaps);
         }

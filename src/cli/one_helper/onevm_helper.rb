@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -207,14 +207,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
                 if nic.key?(attr)
                     ips.push(nic[attr])
                 end
-            end
-        end
-
-        VirtualMachine::EXTERNAL_IP_ATTRS.each do |attr|
-            external_ip = vm['MONITORING'][attr]
-
-            if !external_ip.nil? && !ips.include?(external_ip)
-                ips.push(external_ip)
             end
         end
 
@@ -684,8 +676,20 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
     end
 
     def format_resource(vm, options = {})
+        max_value = 80
+
         str_h1 = '%-80s'
-        str = '%-20s: %-20s'
+        str    = '%-20s: %s'
+
+        trunc = lambda do |tvalue, max = max_value|
+            return '' unless tvalue
+
+            if tvalue.length > max
+                tvalue[0, max - 3] + '...'
+            else
+                tvalue
+            end
+        end
 
         cluster = nil
 
@@ -743,45 +747,95 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
 
         puts
 
-        CLIHelper.print_header(str_h1 % 'VIRTUAL MACHINE MONITORING', false)
-
         vm_monitoring = vm_hash['VM']['MONITORING']
 
-        # Find out if it is a hybrid VM to avoid showing local IPs
-        is_hybrid = false
-        vm_monitoring.each do |key, _value|
-            if VirtualMachine::EXTERNAL_IP_ATTRS.include? key
-                is_hybrid = true
-            end
-        end
+        unit_lambda  = ->(v) { OpenNebulaHelper.unit_to_str(v.to_i, {}) }
+        unitM_lambda = ->(v) { OpenNebulaHelper.unit_to_str(v.to_i / 1024, {}) }
 
-        order_attrs = ['CPU', 'MEMORY', 'NETTX', 'NETRX']
+        order_attrs = {
+            'CPU'         => nil,
+            'MEMORY'      => unit_lambda,
+            'NETTX'       => unitM_lambda,
+            'NETTX_BW'    => unitM_lambda,
+            'NETRX'       => unitM_lambda,
+            'NETRX_BW'    => unitM_lambda,
+            'DISKRDBYTES' => unit_lambda,
+            'DISKRDBYTES_BW' => unit_lambda,
+            'DISKRDIOPS'  => nil,
+            'DISKRDIOPS_BW'  => nil,
+            'DISKWRBYTES' => unit_lambda,
+            'DISKWRBYTES_BW' => unit_lambda,
+            'DISKWRIOPS_BW'  => nil,
+            'DISKWRIOPS'  => nil
+        }
 
         vm_monitoring_sort = []
-        order_attrs.each do |key|
-            if (val = vm_monitoring.delete(key))
-                vm_monitoring_sort << [key, val]
+        order_attrs.each do |key, format|
+            val = vm_monitoring.delete(key)
+
+            if !val
+                vm_monitoring_sort << { 'NAME'  => key,
+                                        'VALUE' => '-',
+                                        'FORECAST'     => '-',
+                                        'FORECAST_FAR' => '-' }
+                next
             end
+
+            val = format.call(val) if format
+
+            forecast = []
+
+            ["#{key}_FORECAST", "#{key}_FORECAST_FAR"].each do |fk|
+                fv = vm_monitoring.delete(fk)
+                fv = format.call(fv) if format && fv
+
+                fv ||= '-'
+
+                forecast << fv
+            end
+
+            vm_monitoring_sort << { 'NAME'  => key,
+                                    'VALUE' => val,
+                                    'FORECAST'     => forecast[0],
+                                    'FORECAST_FAR' => forecast[1] }
         end
 
-        vm_monitoring_sort.sort_by {|a| a[0] }
+        vm_monitoring_sort.sort_by {|a| a['NAME'] }
 
-        filter_attrs = ['STATE', 'DISK_SIZE', 'SNAPSHOT_SIZE']
+        tstamp = begin
+            Time.at(Integer(vm_monitoring.delete('TIMESTAMP'))).ctime
+        rescue StandardError
+            '-'
+        end
+
+        CLIHelper.print_header(str_h1 % "VIRTUAL MACHINE MONITORING [#{tstamp}]", false)
+        CLIHelper::ShowTable.new(nil, self) do
+            column :METRIC, '', :left, :size => 20 do |d|
+                d['NAME']
+            end
+
+            column :VALUE, '', :left, :size => 15 do |d|
+                d['VALUE']
+            end
+
+            column :FORECAST, '', :left, :size => 15 do |d|
+                d['FORECAST'] || ''
+            end
+
+            column :FORECAST_FAR, '', :left, :size => 15 do |d|
+                d['FORECAST_FAR'] || ''
+            end
+
+            default :METRIC, :VALUE, :FORECAST, :FORECAST_FAR
+        end.show(vm_monitoring_sort, {})
+
+        puts
+
+        filter_attrs = ['STATE', 'DISK_SIZE', 'SNAPSHOT_SIZE', 'ID', 'TIMESTAMP']
         vm_monitoring.each do |key, val|
-            if !filter_attrs.include?(key)
-                vm_monitoring_sort << [key, val]
-            end
-        end
+            next if filter_attrs.include?(key)
 
-        vm_monitoring_sort.each do |k, v|
-            if k == 'MEMORY'
-                puts format(str, k, OpenNebulaHelper.unit_to_str(v.to_i, {}))
-            elsif k =~ /NET.X/
-                puts format(str, k,
-                            OpenNebulaHelper.unit_to_str(v.to_i / 1024, {}))
-            else
-                puts format(str, k, v)
-            end
+            puts format(str, trunc.call(key, 20), trunc.call(val))
         end
 
         puts
@@ -803,8 +857,7 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
             vm_disks = [vm_hash['VM']['TEMPLATE']['DISK']].flatten
         end
 
-        if vm.has_elements?('/VM/TEMPLATE/CONTEXT') \
-                && vm['/VM/HISTORY_RECORDS/HISTORY[1]/VM_MAD'] != 'vcenter'
+        if vm.has_elements?('/VM/TEMPLATE/CONTEXT')
             context_disk = vm_hash['VM']['TEMPLATE']['CONTEXT']
 
             context_disk['IMAGE']     = 'CONTEXT'
@@ -841,7 +894,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
                     d['TARGET']
                 end
 
-                # rubocop:disable Metrics/LineLength
                 column :IMAGE, '', :left, :size => 35 do |d|
                     d['IMAGE'] || case d['TYPE'].upcase
                                   when 'FS'
@@ -854,7 +906,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
 
                                   end
                 end
-                # rubocop:enable Metrics/LineLength
 
                 column :SIZE, '', :left, :size => 9 do |d|
                     if d['SIZE']
@@ -930,26 +981,9 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
             sg_nics.compact!
         end
 
-        # This variable holds the extra IP's got from monitoring. Right
-        # now it adds GUEST_IP and GUEST_IP_ADDRESSES from vcenter
-        # monitoring. If other variables hold IPs just add them to this
-        # array. Duplicate IPs are not shown.
-        extra_ips = []
-
-        if (val = vm['/VM/MONITORING/GUEST_IP']) && (val && !val.empty?)
-            extra_ips << val
-        end
-
-        if (val = vm['/VM/MONITORING/GUEST_IP_ADDRESSES']) && (val && !val.empty?)
-            extra_ips += val.split(',')
-        end
-
-        extra_ips.uniq!
-
         ['NIC', 'NIC_ALIAS'].each do |type|
             next unless vm.has_elements?("/VM/TEMPLATE/#{type}") ||
-                        vm.has_elements?('/VM/TEMPLATE/PCI[NIC_ID>-1]') ||
-                        !extra_ips.empty?
+                        vm.has_elements?('/VM/TEMPLATE/PCI[NIC_ID>-1]')
 
             puts
             CLIHelper.print_header(
@@ -960,8 +994,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
                             'IP' => '-',
                             'MAC' => '-',
                             'BRIDGE' => '-' }
-
-            shown_ips = []
 
             array_id = 0
             vm_nics = [vm_hash['VM']['TEMPLATE'][type]]
@@ -985,8 +1017,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
                 ['EXTERNAL_IP', 'IP6_LINK', 'IP6_ULA', 'IP6_GLOBAL', 'IP6'].each do |attr|
                     next unless nic.key?(attr)
 
-                    shown_ips << nic[attr]
-
                     ipstr = { 'IP' => nic.delete(attr),
                               'CLI_DONE' => true,
                               'DOUBLE_ENTRY' => true }
@@ -999,8 +1029,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
                  'VROUTER_IP6_GLOBAL'].each do |attr|
                     next unless nic.key?(attr)
 
-                    shown_ips << nic[attr]
-
                     ipstr = { 'IP' => nic.delete(attr) + ' (VRouter)',
                               'CLI_DONE' => true,
                               'DOUBLE_ENTRY' => true }
@@ -1009,23 +1037,8 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
                     array_id += 1
                 end
 
-                shown_ips << nic['IP'] if nic.key?('IP')
-                shown_ips << nic['EXTERNAL_IP'] if nic.key?('EXTERNAL_IP')
-
                 nic.merge!(nic_default) {|_k, v1, _v2| v1 }
                 array_id += 1
-            end
-
-            extra_ips -= shown_ips
-
-            # Add extra IPs to the VM NICS table
-            extra_ips.each do |ip|
-                vm_nics << {
-                    'NIC_ID' => '-',
-                    'IP' => ip,
-                    'NETWORK' => 'Additional IP',
-                    'BRIDGE' => '-'
-                }
             end
 
             CLIHelper::ShowTable.new(nil, self) do
@@ -1105,7 +1118,7 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
             vm.delete_element('/VM/TEMPLATE/NIC') while vm.has_elements?('/VM/TEMPLATE/NIC')
         end
 
-        if vm.has_elements?('/VM/TEMPLATE/SECURITY_GROUP_RULE') && !is_hybrid
+        if vm.has_elements?('/VM/TEMPLATE/SECURITY_GROUP_RULE')
             puts
             CLIHelper.print_header(str_h1 % 'SECURITY', false)
             puts
@@ -1126,8 +1139,9 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
 
             puts
 
-            # rubocop:disable Metrics/LineLength
+            # rubocop:disable Layout/LineLength
             CLIHelper.print_header(str_h1 % 'SECURITY GROUP   TYPE     PROTOCOL NETWORK                       RANGE          ', false)
+            # rubocop:enable Layout/LineLength
 
             CLIHelper::ShowTable.new(nil, self) do
                 column :ID, '', :size => 4 do |d|
@@ -1179,7 +1193,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
             end.show(
                 [vm_hash['VM']['TEMPLATE']['SECURITY_GROUP_RULE']].flatten, {}
             )
-            # rubocop:enable Metrics/LineLength
 
             if !options[:all]
                 while vm.has_elements?('/VM/TEMPLATE/SECURITY_GROUP_RULE')
@@ -1192,23 +1205,7 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
             puts
             CLIHelper.print_header(str_h1 % 'SNAPSHOTS', false)
 
-            CLIHelper::ShowTable.new(nil, self) do
-                column :ID, '', :size => 4 do |d|
-                    d['SNAPSHOT_ID'] unless d.nil?
-                end
-
-                column :TIME, '', :size => 12 do |d|
-                    OpenNebulaHelper.time_to_str(d['TIME'], false) unless d.nil?
-                end
-
-                column :NAME, '', :left, :size => 46 do |d|
-                    d['NAME'] unless d.nil?
-                end
-
-                column :HYPERVISOR_ID, '', :left, :size => 15 do |d|
-                    d['HYPERVISOR_ID'] unless d.nil?
-                end
-            end.show([vm_hash['VM']['TEMPLATE']['SNAPSHOT']].flatten, {})
+            format_template_snapshots(vm)
 
             vm.delete_element('/VM/TEMPLATE/SNAPSHOT')
         end
@@ -1289,7 +1286,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
         CLIHelper.print_header('NUMA NODES', false)
         puts
 
-        # rubocop:disable Metrics/LineLength
         table = CLIHelper::ShowTable.new(nil, self) do
             column :ID, 'Node ID', :size => 4, :left => false do |d|
                 d['NODE_ID']
@@ -1309,7 +1305,6 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
 
             default :ID, :CPUS_IDS, :MEMORY, :TOTAL_CPUS
         end
-        # rubocop:enable Metrics/LineLength
 
         table.show(numa_nodes)
     end
@@ -1499,6 +1494,28 @@ class OneVMHelper < OpenNebulaHelper::OneHelper
         end
 
         table.show(snapshots)
+    end
+
+    def format_template_snapshots(vm)
+        table = CLIHelper::ShowTable.new(nil, self) do
+            column :ID, '', :size => 4 do |d|
+                d['SNAPSHOT_ID'] unless d.nil?
+            end
+
+            column :TIME, '', :size => 12 do |d|
+                OpenNebulaHelper.time_to_str(d['TIME'], false) unless d.nil?
+            end
+
+            column :NAME, '', :left, :size => 46 do |d|
+                d['NAME'] unless d.nil?
+            end
+
+            column :HYPERVISOR_ID, '', :left, :size => 15 do |d|
+                d['HYPERVISOR_ID'] unless d.nil?
+            end
+        end
+        vm_hash = vm.to_hash
+        table.show([vm_hash['VM']['TEMPLATE']['SNAPSHOT']].flatten, {})
     end
 
 end

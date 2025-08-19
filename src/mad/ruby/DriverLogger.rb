@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2023, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -28,8 +28,12 @@ module OpenNebula
 
         # Generic log function
         def self.log_function(severity, message)
-            lines = message.lines.map {|l| "#{severity}: #{File.basename $PROGRAM_NAME}: #{l}" }
-            STDERR.puts lines.join
+            lines = if message.is_a?(Exception)
+                        ["#{message.message}\n"] + message.backtrace.map {|l| "  #{l}\n" }
+                    else
+                        message.lines
+                    end
+            STDERR.puts lines.map {|l| "#{severity}: #{File.basename $PROGRAM_NAME}: #{l}" }.join
         end
 
         # Logs an info message

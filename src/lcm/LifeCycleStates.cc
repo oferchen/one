@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -29,6 +29,8 @@
 #include "ImagePool.h"
 #include "DatastorePool.h"
 #include "VirtualMachinePool.h"
+#include "SchedulerManager.h"
+#include "PlanManager.h"
 
 using namespace std;
 
@@ -74,15 +76,9 @@ void LifeCycleManager::start_prolog_migrate(VirtualMachine* vm)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-void LifeCycleManager::revert_migrate_after_failure(VirtualMachine* vm)
+void LifeCycleManager::revert_migrate_after_failure(VirtualMachine* vm, bool live)
 {
-    HostShareCapacity sr;
-
     time_t the_time = time(0);
-
-    //----------------------------------------------------
-    //           RUNNING STATE FROM SAVE_MIGRATE
-    //----------------------------------------------------
 
     vm->set_state(VirtualMachine::RUNNING);
 
@@ -90,22 +86,47 @@ void LifeCycleManager::revert_migrate_after_failure(VirtualMachine* vm)
 
     vmpool->update_history(vm);
 
-    vm->get_capacity(sr);
-
     if ( vm->get_hid() != vm->get_previous_hid() )
     {
+        HostShareCapacity sr;
+
+        vm->get_capacity(sr);
+
         hpool->del_capacity(vm->get_hid(), sr);
 
-        if (!sr.pci.empty())
+        // Revert PCI assignment. Note: live migration is disabled for VMs with PCI devs
+        if (!live && !sr.pci.empty())
         {
             if (auto host = hpool->get(vm->get_previous_hid()))
             {
-                // Revert PCI assignment in sr
                 host->revert_pci(sr);
             }
         }
 
         vm->rollback_previous_vnc_port();
+
+        // Rollback cluster quota
+        int cid_destination = vm->get_cid();
+        int cid_source      = vm->get_previous_cid();
+
+        if (cid_destination != cid_source)
+        {
+            VirtualMachineTemplate quota_tmpl;
+
+            int uid = vm->get_uid();
+            int gid = vm->get_gid();
+
+            vm->get_quota_template(quota_tmpl, true, vm->is_running_quota());
+
+            quota_tmpl.replace("CLUSTER_ID", cid_destination);
+            quota_tmpl.add("SKIP_GLOBAL_QUOTA", true);
+
+            Quotas::quota_del(Quotas::VM, uid, gid, &quota_tmpl);
+
+            quota_tmpl.replace("CLUSTER_ID", cid_source);
+
+            Quotas::vm_add(uid, gid, &quota_tmpl);
+        }
     }
 
     vm->set_previous_etime(the_time);
@@ -126,8 +147,16 @@ void LifeCycleManager::revert_migrate_after_failure(VirtualMachine* vm)
 
     vmpool->update(vm);
 
-    vm->log("LCM", Log::INFO, "Fail to save VM state while migrating."
+    if (live)
+    {
+        vm->log("LCM", Log::INFO, "Fail to live migrate VM."
             " Assuming that the VM is still RUNNING.");
+    }
+    else
+    {
+        vm->log("LCM", Log::INFO, "Fail to save VM state while migrating."
+            " Assuming that the VM is still RUNNING.");
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -233,7 +262,7 @@ void LifeCycleManager::trigger_save_failure(int vid)
 
         if ( vm->get_lcm_state() == VirtualMachine::SAVE_MIGRATE )
         {
-            revert_migrate_after_failure(vm.get());
+            revert_migrate_after_failure(vm.get(), false);
         }
         else if ( vm->get_lcm_state() == VirtualMachine::SAVE_SUSPEND ||
                   vm->get_lcm_state() == VirtualMachine::SAVE_STOP )
@@ -275,8 +304,12 @@ void LifeCycleManager::trigger_deploy_success(int vid)
         }
 
         Template quota_tmpl;
+
         int uid = vm->get_uid();
         int gid = vm->get_gid();
+  
+        int plan_id   = vm->plan_id();
+        int action_id = vm->action_id();
 
         //----------------------------------------------------
         //                 RUNNING STATE
@@ -348,6 +381,12 @@ void LifeCycleManager::trigger_deploy_success(int vid)
         {
             Quotas::quota_del(Quotas::VM, uid, gid, &quota_tmpl);
         }
+
+        if (plan_id >= -1)
+        {
+            auto planm = Nebula::instance().get_planm();
+            planm->action_success(plan_id, action_id);
+        }
     });
 }
 
@@ -365,48 +404,14 @@ void LifeCycleManager::trigger_deploy_failure(int vid)
             return;
         }
 
+        int plan_id   = vm->plan_id();
+        int action_id = vm->action_id();
+
         time_t the_time = time(0);
 
         if ( vm->get_lcm_state() == VirtualMachine::MIGRATE )
         {
-            HostShareCapacity sr;
-
-            //----------------------------------------------------
-            //           RUNNING STATE FROM MIGRATE
-            //----------------------------------------------------
-
-            vm->set_state(VirtualMachine::RUNNING);
-
-            vm->set_etime(the_time);
-
-            vmpool->update_history(vm.get());
-
-            vm->set_previous_etime(the_time);
-
-            vm->set_previous_running_etime(the_time);
-
-            vmpool->update_previous_history(vm.get());
-
-            vm->get_capacity(sr);
-
-            hpool->del_capacity(vm->get_hid(), sr);
-
-            vm->rollback_previous_vnc_port();
-
-            // --- Add new record by copying the previous one
-
-            vm->cp_previous_history();
-
-            vm->set_stime(the_time);
-
-            vm->set_running_stime(the_time);
-
-            vmpool->insert_history(vm.get());
-
-            vmpool->update(vm.get());
-
-            vm->log("LCM", Log::INFO, "Fail to live migrate VM."
-                    " Assuming that the VM is still RUNNING.");
+            revert_migrate_after_failure(vm.get(), true);
 
             return;
         }
@@ -458,6 +463,12 @@ void LifeCycleManager::trigger_deploy_failure(int vid)
         vmpool->update_history(vm.get());
 
         vmpool->update(vm.get());
+
+        if (plan_id >= -1)
+        {
+            auto planm = Nebula::instance().get_planm();
+            planm->action_failure(plan_id, action_id);
+        }
     });
 }
 
@@ -478,8 +489,14 @@ void LifeCycleManager::trigger_shutdown_success(int vid)
         }
 
         Template quota_tmpl;
+
         int uid = vm->get_uid();
         int gid = vm->get_gid();
+
+        int plan_id   = vm->plan_id();
+        int action_id = vm->action_id();
+
+        auto state = vm->get_lcm_state();
 
         if ( vm->get_lcm_state() == VirtualMachine::SHUTDOWN )
         {
@@ -567,6 +584,12 @@ void LifeCycleManager::trigger_shutdown_success(int vid)
         {
             Quotas::quota_del(Quotas::VM, uid, gid, &quota_tmpl);
         }
+
+        if (state != VirtualMachine::SAVE_MIGRATE && plan_id >= -1)
+        {
+            auto planm = Nebula::instance().get_planm();
+            planm->action_success(plan_id, action_id);
+        }
     });
 }
 
@@ -605,11 +628,22 @@ void LifeCycleManager::trigger_shutdown_failure(int vid)
         }
         else if (vm->get_lcm_state() == VirtualMachine::SAVE_MIGRATE)
         {
-            revert_migrate_after_failure(vm.get());
+            revert_migrate_after_failure(vm.get(), false);
         }
         else
         {
             vm->log("LCM", Log::ERROR, "shutdown_failure_action, VM in a wrong state");
+        }
+
+        int plan_id   = vm->plan_id();
+        int action_id = vm->action_id();
+
+        vm.reset();
+
+        if (plan_id >= -1)
+        {
+            auto planm = Nebula::instance().get_planm();
+            planm->action_failure(plan_id, action_id);
         }
     });
 }
@@ -1243,7 +1277,7 @@ void LifeCycleManager::trigger_monitor_poweron(int vid)
 
             vm.reset();
 
-            Quotas::vm_check(uid, gid, &quota_tmpl, error);
+            Quotas::vm_add(uid, gid, &quota_tmpl);
         }
         else if ( vm->get_state() == VirtualMachine::ACTIVE )
         {
@@ -1492,7 +1526,7 @@ void LifeCycleManager::trigger_snapshot_create_failure(int vid)
 {
     trigger([this, vid]
     {
-        int vm_uid, vm_gid;
+        int vm_uid, vm_gid, vm_cid;
         VectorAttribute* snap = nullptr;
 
         if ( auto vm = vmpool->get(vid) )
@@ -1501,6 +1535,7 @@ void LifeCycleManager::trigger_snapshot_create_failure(int vid)
             {
                 vm_uid = vm->get_uid();
                 vm_gid = vm->get_gid();
+                vm_cid = vm->get_cid();
 
                 snap = vm->get_active_snapshot();
 
@@ -1529,6 +1564,7 @@ void LifeCycleManager::trigger_snapshot_create_failure(int vid)
         {
             Template quota_tmpl;
 
+            quota_tmpl.add("CLUSTER_ID", vm_cid);
             quota_tmpl.set(snap);
 
             Quotas::quota_del(Quotas::VM, vm_uid, vm_gid, &quota_tmpl);
@@ -1582,7 +1618,7 @@ void LifeCycleManager::trigger_snapshot_delete_success(int vid)
 {
     trigger([this, vid]
     {
-        int vm_uid, vm_gid;
+        int vm_uid, vm_gid, vm_cid;
         VectorAttribute* snap = nullptr;
 
         if ( auto vm = vmpool->get(vid) )
@@ -1591,6 +1627,7 @@ void LifeCycleManager::trigger_snapshot_delete_success(int vid)
             {
                 vm_uid = vm->get_uid();
                 vm_gid = vm->get_gid();
+                vm_cid = vm->get_cid();
 
                 snap = vm->get_active_snapshot();
 
@@ -1619,6 +1656,7 @@ void LifeCycleManager::trigger_snapshot_delete_success(int vid)
         {
             Template quota_tmpl;
 
+            quota_tmpl.add("CLUSTER_ID", vm_cid);
             quota_tmpl.set(snap);
 
             Quotas::quota_del(Quotas::VM, vm_uid, vm_gid, &quota_tmpl);
@@ -1927,6 +1965,7 @@ void LifeCycleManager::trigger_disk_snapshot_success(int vid)
         int vm_gid;
 
         bool   is_persistent;
+        bool   persist_snap;
         string target;
 
         long long disk_size = -1;
@@ -1965,6 +2004,12 @@ void LifeCycleManager::trigger_disk_snapshot_success(int vid)
                     disk->revert_snapshot_quotas(snap_id, ds_quotas, vm_quotas,
                                                  img_owner, vm_owner);
                     disk->revert_snapshot(snap_id, true);
+
+                    if (disk->allow_orphans() == Snapshots::LINEAR)
+                    {
+                        disk->delete_younger_snapshots(snap_id, ds_quotas, vm_quotas,
+                                                       img_owner, vm_owner);
+                    }
                     break;
 
                 case VirtualMachine::DISK_SNAPSHOT_DELETE:
@@ -1991,10 +2036,16 @@ void LifeCycleManager::trigger_disk_snapshot_success(int vid)
                 snaps = *tmp_snaps;
             }
 
+            if (!vm_quotas.empty())
+            {
+                vm_quotas.add("CLUSTER_ID", vm->get_cid());
+            }
+
             disk->vector_value("IMAGE_ID", img_id);
 
             is_persistent = disk->is_persistent();
             target        = disk->get_tm_target();
+            persist_snap  = disk->persistent_snapshots();
 
             vm->set_vm_info();
 
@@ -2039,7 +2090,10 @@ void LifeCycleManager::trigger_disk_snapshot_success(int vid)
                 imagem->set_image_size(img_id, disk_size);
             }
 
-            imagem->set_image_snapshots(img_id, snaps);
+            if (persist_snap)
+            {
+                imagem->set_image_snapshots(img_id, snaps);
+            }
         }
 
         switch (state)
@@ -2088,6 +2142,7 @@ void LifeCycleManager::trigger_disk_snapshot_failure(int vid)
         int vm_gid;
 
         bool is_persistent;
+        bool persist_snap;
         string target;
 
         if ( auto vm = vmpool->get(vid) )
@@ -2139,11 +2194,17 @@ void LifeCycleManager::trigger_disk_snapshot_failure(int vid)
                 snaps = *tmp_snaps;
             }
 
+            if (!vm_quotas.empty())
+            {
+                vm_quotas.add("CLUSTER_ID", vm->get_cid());
+            }
+
             disk = vm->get_disk(disk_id);
 
             disk->vector_value("IMAGE_ID", img_id);
 
             is_persistent = disk->is_persistent();
+            persist_snap  = disk->persistent_snapshots();
             target        = disk->get_tm_target();
 
             // Update the history record
@@ -2183,7 +2244,7 @@ void LifeCycleManager::trigger_disk_snapshot_failure(int vid)
         }
 
         // Update image if it is persistent and ln mode does not clone it
-        if ( img_id != -1 && is_persistent && target != "SYSTEM" )
+        if ( img_id != -1 && is_persistent && target != "SYSTEM" && persist_snap)
         {
             imagem->set_image_snapshots(img_id, snaps);
         }
@@ -2242,7 +2303,8 @@ void LifeCycleManager::trigger_disk_lock_success(int vid)
                 {
                     case Image::USED:
                     case Image::USED_PERS:
-                        ready.push_back(make_tuple(id, image->get_source(), image->get_format()));
+                        ready.push_back(make_tuple(id, image->get_source(),
+                                    image->get_format()));
                         break;
 
                     case Image::ERROR:
@@ -2262,6 +2324,7 @@ void LifeCycleManager::trigger_disk_lock_success(int vid)
             }
         }
 
+        bool do_place = false;
 
         for (const auto& rit : ready)
         {
@@ -2283,6 +2346,9 @@ void LifeCycleManager::trigger_disk_lock_success(int vid)
                 // Automatic requirements are not recalculated on purpose
 
                 vm->set_state(VirtualMachine::PENDING);
+
+                do_place = true;
+
             }
         }
         else if (error.size() > 0)
@@ -2295,6 +2361,11 @@ void LifeCycleManager::trigger_disk_lock_success(int vid)
         }
 
         vmpool->update(vm.get());
+
+        if ( do_place )
+        {
+            Nebula::instance().get_sm()->trigger_place();
+        }
     });
 }
 
@@ -2446,6 +2517,11 @@ void LifeCycleManager::trigger_disk_resize_failure(int vid)
             disk->vector_value("SIZE_PREV", size_prev);
 
             disk->resize_quotas(size - size_prev, ds_deltas, vm_deltas, img_quota, vm_quota);
+
+            if (!vm_deltas.empty())
+            {
+                vm_deltas.add("CLUSTER_ID", vm->get_cid());
+            }
 
             disk->clear_resize(true);
 
@@ -2632,6 +2708,7 @@ void LifeCycleManager::trigger_resize_failure(int vid)
                 vattr->vector_value("VCPU", ovcpu);
                 vattr->vector_value("MEMORY", omem);
 
+                deltas.add("CLUSTER_ID", vm->get_cid());
                 deltas.add("MEMORY", nmem - omem);
                 deltas.add("CPU", ncpu - ocpu);
                 deltas.add("VCPU", nvcpu - ovcpu);
@@ -2704,6 +2781,7 @@ void LifeCycleManager::trigger_disk_restore_success(int vid)
             {
                 uid = vm->get_uid();
                 gid = vm->get_gid();
+
                 vm->delete_snapshots(vm_quotas_snp);
                 vm->delete_non_persistent_disk_snapshots(vm_quotas_snp, ds_quotas_snp);
 

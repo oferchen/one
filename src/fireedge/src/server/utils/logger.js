@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -22,8 +22,12 @@ const { sprintf } = require('sprintf-js')
 const morgan = require('morgan')
 const _ = require('lodash')
 const { defaults } = require('server/utils/constants')
-const { defaultWebpackMode, defaultLogsLevels, defaultLogMessageLength } =
-  defaults
+const {
+  defaultWebpackMode,
+  defaultLogsLevels,
+  defaultLogMessageLength,
+  defaultSensitiveDataForXMLRPC,
+} = defaults
 
 let logger = null
 
@@ -142,6 +146,28 @@ const writeInLogger = (message = '', optLog = {}) => {
 }
 
 /**
+ * This function removes sensitive data from the logs.
+ *
+ * @param {string} command - XMLRPC command
+ * @param {string[]} paramCommands - XMLRPC parameters
+ * @returns {string[]} - Parameters with sensitive data masked
+ */
+const removeSensitiveData = (command = '', paramCommands = []) => {
+  const match = defaultSensitiveDataForXMLRPC.find(({ regex }) =>
+    regex.test(command)
+  )
+
+  if (!match) return paramCommands
+
+  const result = [...paramCommands]
+  if (match.maskIndex >= 0 && match.maskIndex < result.length) {
+    result[match.maskIndex] = '*****'
+  }
+
+  return result
+}
+
+/**
  * Write in logger when XMLRPC is invalid.
  *
  * @param {string} rpc - XMLRPC URL
@@ -158,6 +184,7 @@ module.exports = {
   initLogger,
   getLogger,
   getLoggerMiddleware,
+  removeSensitiveData,
   writeInLogger,
   writeInLoggerInvalidRPC,
 }

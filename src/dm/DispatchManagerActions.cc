@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -16,7 +16,9 @@
 
 #include "DispatchManager.h"
 #include "NebulaLog.h"
+#include <fstream>
 
+#include "DatastorePool.h"
 #include "VirtualMachineManager.h"
 #include "TransferManager.h"
 #include "ImageManager.h"
@@ -31,6 +33,7 @@
 #include "VirtualRouterPool.h"
 #include "SecurityGroupPool.h"
 #include "ScheduledActionPool.h"
+#include "SchedulerManager.h"
 
 using namespace std;
 
@@ -42,13 +45,6 @@ int DispatchManager::deploy(unique_ptr<VirtualMachine> vm,
 {
     ostringstream oss;
     int vid;
-    int uid;
-    int gid;
-
-    string error;
-
-    VirtualMachineTemplate quota_tmpl;
-    bool do_quotas = false;
 
     if ( vm == nullptr )
     {
@@ -65,33 +61,15 @@ int DispatchManager::deploy(unique_ptr<VirtualMachine> vm,
          vm->get_state() == VirtualMachine::STOPPED ||
          vm->get_state() == VirtualMachine::UNDEPLOYED )
     {
-        do_quotas = vm->get_state() == VirtualMachine::STOPPED ||
-                    vm->get_state() == VirtualMachine::UNDEPLOYED;
-
         vm->set_state(VirtualMachine::ACTIVE);
 
         vmpool->update(vm.get());
-
-        if ( do_quotas )
-        {
-            uid = vm->get_uid();
-            gid = vm->get_gid();
-
-            vm->get_quota_template(quota_tmpl, false, true);
-        }
 
         lcm->trigger_deploy(vid);
     }
     else
     {
         goto error;
-    }
-
-    vm.reset(); //force unlock of vm mutex
-
-    if ( do_quotas )
-    {
-        Quotas::vm_check(uid, gid, &quota_tmpl, error);
     }
 
     return 0;
@@ -600,6 +578,8 @@ int DispatchManager::release(int vid, const RequestAttributes& ra,
         vm->set_state(VirtualMachine::PENDING);
 
         vmpool->update(vm.get());
+
+        Nebula::instance().get_sm()->trigger_place();
     }
     else
     {
@@ -752,6 +732,8 @@ int DispatchManager::resume(int vid, const RequestAttributes& ra,
         vm->set_state(VirtualMachine::PENDING);
 
         vmpool->update(vm.get());
+
+        Nebula::instance().get_sm()->trigger_place();
     }
     else if (vm->get_state() == VirtualMachine::SUSPENDED)
     {
@@ -884,7 +866,13 @@ int DispatchManager::resched(int vid, bool do_resched,
         }
 
         vm->set_resched(do_resched);
+
         vmpool->update(vm.get());
+
+        if (do_resched)
+        {
+            Nebula::instance().get_sm()->trigger_place();
+        }
     }
     else
     {
@@ -996,30 +984,7 @@ int DispatchManager::delete_vm(unique_ptr<VirtualMachine> vm,
 
     HostShareCapacity sr;
 
-    bool is_public_host = false;
-    int  host_id = -1;
-
-    if (vm->hasHistory())
-    {
-        host_id = vm->get_hid();
-    }
-
     int vid = vm->get_oid();
-
-    if (host_id != -1)
-    {
-        if (auto host = hpool->get_ro(host_id))
-        {
-            is_public_host = host->is_public_cloud();
-        }
-        else
-        {
-            oss << "Error getting host " << host_id;
-            error = oss.str();
-
-            return -1;
-        }
-    }
 
     oss << "Deleting VM " << vm->get_oid();
     NebulaLog::log("DiM", Log::DEBUG, oss);
@@ -1032,28 +997,14 @@ int DispatchManager::delete_vm(unique_ptr<VirtualMachine> vm,
 
             hpool->del_capacity(vm->get_hid(), sr);
 
-            if (is_public_host)
-            {
-                vmm->trigger_cleanup(vid, false);
-            }
-            else
-            {
-                tm->trigger_epilog_delete(vm.get());
-            }
+            tm->trigger_epilog_delete(vm.get());
 
             free_vm_resources(std::move(vm), true);
             break;
 
         case VirtualMachine::STOPPED:
         case VirtualMachine::UNDEPLOYED:
-            if (is_public_host)
-            {
-                vmm->trigger_cleanup(vid, false);
-            }
-            else
-            {
-                tm->trigger_epilog_delete(vm.get());
-            }
+            tm->trigger_epilog_delete(vm.get());
 
             free_vm_resources(std::move(vm), true);
             break;
@@ -1105,7 +1056,6 @@ int DispatchManager::delete_recreate(unique_ptr<VirtualMachine> vm,
     Template vm_quotas_snp;
 
     VirtualMachineTemplate quota_tmpl;
-    bool do_quotas = false;
 
     vector<Template *> ds_quotas_snp;
 
@@ -1128,10 +1078,15 @@ int DispatchManager::delete_recreate(unique_ptr<VirtualMachine> vm,
             vm_uid = vm->get_uid();
             vm_gid = vm->get_gid();
 
+            vm->get_quota_template(quota_tmpl, false, true);
+
+            if (!Quotas::vm_check(vm_uid, vm_gid, &quota_tmpl, error))
+            {
+                return -1;
+            }
+
             vm->delete_non_persistent_disk_snapshots(vm_quotas_snp,
                                                      ds_quotas_snp);
-
-            do_quotas = true;
 
             [[fallthrough]];
 
@@ -1150,10 +1105,7 @@ int DispatchManager::delete_recreate(unique_ptr<VirtualMachine> vm,
 
             vmpool->update(vm.get());
 
-            if ( do_quotas )
-            {
-                vm->get_quota_template(quota_tmpl, false, true);
-            }
+            Nebula::instance().get_sm()->trigger_place();
             break;
 
         case VirtualMachine::POWEROFF:
@@ -1179,11 +1131,6 @@ int DispatchManager::delete_recreate(unique_ptr<VirtualMachine> vm,
     if ( !vm_quotas_snp.empty() )
     {
         Quotas::vm_del(vm_uid, vm_gid, &vm_quotas_snp);
-    }
-
-    if ( do_quotas )
-    {
-        Quotas::vm_check(vm_uid, vm_gid, &quota_tmpl, error);
     }
 
     return rc;
@@ -2697,7 +2644,17 @@ int DispatchManager::backup(int vid, int backup_ds_id, bool reset,
             return -1;
     }
 
-    vm->backups().last_datastore_id(backup_ds_id);
+    if (auto ds = Nebula::instance().get_dspool()->get_ro(backup_ds_id))
+    {
+        auto bridge = ds->bridge(vid);
+
+        if (!bridge.empty())
+        {
+            vm->backups().last_bridge(bridge);
+        }
+    }
+
+    vm->backups().last_datastore_id( backup_ds_id );
 
     if (reset)
     {
@@ -2798,7 +2755,7 @@ int DispatchManager::restore(int vid, int img_id, int inc_id, int disk_id,
 /* -------------------------------------------------------------------------- */
 
 static int test_set_capacity(VirtualMachine * vm, float cpu, long mem, int vcpu,
-                             string& error)
+                             bool enforce, string& error)
 {
     HostPool * hpool = Nebula::instance().get_hpool();
 
@@ -2831,7 +2788,7 @@ static int test_set_capacity(VirtualMachine * vm, float cpu, long mem, int vcpu,
 
         vm->get_capacity(sr);
 
-        if (!host->test_capacity(sr, error))
+        if (!host->test_capacity(sr, error, enforce))
         {
             return -1;
         }
@@ -2848,7 +2805,7 @@ static int test_set_capacity(VirtualMachine * vm, float cpu, long mem, int vcpu,
     return rc;
 }
 
-int DispatchManager::resize(int vid, float cpu, int vcpu, long memory,
+int DispatchManager::resize(int vid, float cpu, int vcpu, long memory, bool enforce,
                             const RequestAttributes& ra, string& error_str)
 {
     /* ---------------------------------------------------------------------- */
@@ -2874,7 +2831,7 @@ int DispatchManager::resize(int vid, float cpu, int vcpu, long memory,
         case VirtualMachine::UNDEPLOYED:
         case VirtualMachine::CLONING:
         case VirtualMachine::CLONING_FAILURE:
-            rc = test_set_capacity(vm.get(), cpu, memory, vcpu, error_str);
+            rc = test_set_capacity(vm.get(), cpu, memory, vcpu, enforce, error_str);
             break;
 
         case VirtualMachine::ACTIVE:
@@ -2916,7 +2873,7 @@ int DispatchManager::resize(int vid, float cpu, int vcpu, long memory,
                 break;
             }
 
-            rc = test_set_capacity(vm.get(), cpu, memory, vcpu, error_str);
+            rc = test_set_capacity(vm.get(), cpu, memory, vcpu, enforce, error_str);
 
             if (rc == 0)
             {

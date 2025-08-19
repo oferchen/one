@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -97,7 +97,8 @@ class Restic
 
         @restic_bin = RESTIC_BIN_PATHS[@options[:host_type]]
 
-        @passwd = @doc.elements["#{prefix}TEMPLATE/RESTIC_PASSWORD"].text.delete(%("'))
+        passwd_s = @doc.elements["#{prefix}TEMPLATE/RESTIC_PASSWORD"]
+        @passwd = passwd_s.text.sub(/\A['"](.*)['"]\z/, '\1')
 
         @bwlimit = safe_get("#{prefix}TEMPLATE/RESTIC_BWLIMIT", -1)
         @maxproc = Integer(safe_get("#{prefix}TEMPLATE/RESTIC_MAXPROC", -1))

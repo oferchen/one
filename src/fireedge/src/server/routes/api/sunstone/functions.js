@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -101,14 +101,14 @@ const fillViewsInfo = (views, rtn) => {
  *
  * @param {object} res - http response
  * @param {Function} next - express stepper
- * @param {object} params - params of http request
+ * @param {object} _params - params of http request
  * @param {object} userData - user of http request
  * @param {Function} oneConnection - xmlrpc function
  */
 const getViews = (
   res = {},
   next = () => undefined,
-  params = {},
+  _params = {},
   userData = {},
   oneConnection = defaultEmptyFunction
 ) => {
@@ -163,6 +163,9 @@ const getViews = (
                  * 3 -> Group template has not TEMPLATE.FIREEDGE.VIEWS and TEMPLATE.FIREEDGE.GROUP_ADMIN_VIEWS
                  */
 
+                // Create info views
+                const views = {}
+
                 if (
                   isAdminGroup &&
                   groupAdminViews &&
@@ -170,14 +173,12 @@ const getViews = (
                 ) {
                   // First case: Group template has TEMPLATE.FIREEDGE.GROUP_ADMIN_VIEWS and the user is admin of the group
 
-                  // Create info views
-                  const views = {}
-
                   // Fill info of each view reading the files on global.paths.SUNSTONE_PATH/{view name}
                   fillViewsInfo(groupAdminViews, views)
 
-                  // Get default view of the group
+                  // Get default view. If user has a default view, priorize over group default view
                   const defaultView =
+                    dataUser?.USER?.TEMPLATE?.FIREEDGE?.DEFAULT_VIEW ||
                     vmgroupData?.GROUP?.TEMPLATE?.FIREEDGE
                       ?.GROUP_ADMIN_DEFAULT_VIEW
 
@@ -194,14 +195,12 @@ const getViews = (
                 else if (groupViews && groupViews.length > 0) {
                   // Second case: Group template has TEMPLATE.FIREEDGE.VIEWS
 
-                  // Create info views
-                  const views = {}
-
                   // Fill info of each view reading the files on global.paths.SUNSTONE_PATH/{view name}
                   fillViewsInfo(groupViews, views)
 
-                  // Get default view of the group
+                  // Get default view. If user has a default view, priorize over group default view
                   const defaultView =
+                    dataUser?.USER?.TEMPLATE?.FIREEDGE?.DEFAULT_VIEW ||
                     vmgroupData?.GROUP?.TEMPLATE?.FIREEDGE?.DEFAULT_VIEW
 
                   // Create response
@@ -231,9 +230,6 @@ const getViews = (
                         const groupViewsFile =
                           jsonFileData.groups[vmgroupData.GROUP.NAME] ||
                           jsonFileData.default
-
-                        // Create info views
-                        const views = {}
 
                         // Fill info of each view reading the files on global.paths.SUNSTONE_PATH/{view name}
                         fillViewsInfo(groupViewsFile, views)
@@ -274,14 +270,14 @@ const getViews = (
  *
  * @param {object} res - http response
  * @param {Function} next - express stepper
- * @param {object} params - params of http request
- * @param {object} userData - user of http request
+ * @param {object} _params - params of http request
+ * @param {object} _userData - user of http request
  */
 const getConfig = (
   res = {},
   next = defaultEmptyFunction,
-  params = {},
-  userData = {}
+  _params = {},
+  _userData = {}
 ) => {
   let error
 

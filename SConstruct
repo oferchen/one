@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -111,7 +111,8 @@ main_env.Append(LIBPATH=[
     cwd+'/src/ipamm',
     cwd+'/src/data_model',
     cwd+'/src/protocol',
-    cwd+'/src/sam'
+    cwd+'/src/sam',
+    cwd+'/src/schedm'
 ])
 
 # Compile flags
@@ -138,7 +139,6 @@ vars.Add('mysql', 'Build with MySQL support', 'no')
 vars.Add('parsers', 'Rebuild flex/bison files', 'no')
 vars.Add('xmlrpc', 'Path to xmlrpc directory', '')
 vars.Add('new_xmlrpc', 'Use xmlrpc-c version >=1.31', 'no')
-vars.Add('sunstone', 'Build Sunstone', 'no')
 vars.Add('fireedge', 'Build FireEdge', 'no')
 vars.Add('systemd', 'Build with systemd support', 'no')
 vars.Add('rubygems', 'Generate Ruby gems', 'no')
@@ -229,15 +229,8 @@ main_env.Append(rubygems=ARGUMENTS.get('rubygems', 'no'))
 # Enterprise Edition
 main_env.Append(enterprise=ARGUMENTS.get('enterprise', 'no'))
 
-# Sunstone minified files generation
-main_env.Append(sunstone=ARGUMENTS.get('sunstone', 'no'))
-
 # FireEdge minified files generation
 main_env.Append(fireedge=ARGUMENTS.get('fireedge', 'no'))
-
-# TODO this should be aligned with one-ee-tools workflows
-# Onedb Marshal files generation
-main_env.Append(marshal=ARGUMENTS.get('marshal', 'no'))
 
 # Context packages download
 main_env.Append(context=ARGUMENTS.get('context', 'no'))
@@ -291,8 +284,6 @@ else:
     main_env.Replace(mysql='yes')
     shutil.rmtree('.xmlrpc_test', True)
     shutil.rmtree('src/nebula/.xmlrpc_test', True)
-    shutil.rmtree('src/scheduler/.xmlrpc_test', True)
-
 
 # libxml2
 main_env.ParseConfig('xml2-config --libs --cflags')
@@ -323,7 +314,7 @@ build_scripts = [
     'src/im/SConstruct',
     'src/image/SConstruct',
     'src/dm/SConstruct',
-    'src/scheduler/SConstruct',
+    'src/schedm_mad/remotes/rank/SConstruct',
     'src/vnm/SConstruct',
     'src/vn_template/SConstruct',
     'src/hm/SConstruct',
@@ -338,15 +329,13 @@ build_scripts = [
     'src/vrouter/SConstruct',
     'src/market/SConstruct',
     'src/ipamm/SConstruct',
-    'src/sunstone/public/locale/languages/SConstruct',
-    'src/sunstone/public/SConstruct',
     'src/fireedge/SConstruct',
     'share/rubygems/SConstruct',
     'src/client/SConstruct',
     'src/monitor/SConstruct',
-    'src/onedb/SConstruct',
     'src/protocol/SConstruct',
     'src/sam/SConstruct',
+    'src/schedm/SConstruct',
     svncterm_path,
     'share/context/SConstruct'
 ]

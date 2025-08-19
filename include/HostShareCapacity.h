@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------ */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems              */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems              */
 /*                                                                          */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may  */
 /* not use this file except in compliance with the License. You may obtain  */
@@ -19,6 +19,8 @@
 
 #include "Template.h"
 #include "Attribute.h"
+
+#include "VirtualMachine.h"
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
@@ -49,6 +51,10 @@ struct HostShareCapacity
     long long mem;
     long long disk;
 
+    bool is_q35;
+
+    std::string vgpu_profile;
+
     std::vector<VectorAttribute *> pci;
 
     VectorAttribute * topology;
@@ -66,7 +72,12 @@ struct HostShareCapacity
         float fcpu;
 
         pci.clear();
+
         nodes.clear();
+
+        vgpu_profile = "";
+
+        is_q35 = false;
 
         vmid = vid;
 
@@ -93,6 +104,8 @@ struct HostShareCapacity
         tmpl.get("NUMA_NODE", nodes);
 
         topology = tmpl.get("TOPOLOGY");
+
+        is_q35 = VirtualMachine::test_machine_type(tmpl.get("OS"), "q35");
 
         return;
     }

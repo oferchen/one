@@ -27,28 +27,25 @@
 
 ## Taking OpenNebula for a Test Drive
 
-You can quickly and easily try out OpenNebula’s functionality by installing:
-
-- [miniONE](https://github.com/OpenNebula/minione) for infrastructures based on open-source hypervisors.
-- [vOneCloud](http://docs.opennebula.org/vonecloud) for infrastructures based on Broadcom VMware.
+You can quickly and easily try out OpenNebula’s functionality by installing [miniONE](https://github.com/OpenNebula/minione). Then, you can follow [tutorials](https://docs.opennebula.io/stable/quick_start/try_opennebula/opennebula_on-prem_with_minione/) to quickly install an OpenNebula cloud.
 
 ## Installation
 
-You can find more information about OpenNebula’s architecture, installation, configuration and references to configuration files in this [documentation section](https://docs.opennebula.io/stable/deployment/index.html).
+For information on installing OpenNebula, please see this [documentation section](https://docs.opennebula.io/stable/software/installation_process/).
 
-It is very useful to learn where [log files of the main OpenNebula components are placed](http://docs.opennebula.io/5.12/deployment/references/log_debug.html). Also check the [reference about the main OpenNebula daemon configuration file](https://docs.opennebula.io/stable/installation_and_configuration/opennebula_services/oned.html).
+It is very useful to learn where [log files of the main OpenNebula components are placed](https://docs.opennebula.io/stable/product/operation_references/opennebula_services_configuration/troubleshooting/). Also check the [reference about the main OpenNebula daemon configuration file](https://docs.opennebula.io/stable/product/operation_references/opennebula_services_configuration/oned/).
 
 ### Front-end Installation
 
 The Front-end is the central part of an OpenNebula installation. This is the machine where the server software is installed and where you connect to manage your cloud. It can be a physical node or a virtual instance.
 
-Please, visit the [official documentation for more details and a step-by-step guide](https://docs.opennebula.io/stable/installation_and_configuration/frontend_installation/overview.html). Using the packages provided on our site is the recommended method, to ensure the installation of the latest version, and to avoid possible package divergences with different distributions. There are two alternatives here: you can add **our package repositories** to your system, or visit the [software menu](http://opennebula.io/use) to **download the latest package** for your Linux distribution.
+Please visit the [official documentation for more details and a step-by-step guide](https://docs.opennebula.io/stable/software/installation_process/manual_installation/overview/). Using the packages provided on our site is the recommended method, to ensure the installation of the latest version and to avoid possible package divergences with different distributions. There are two alternatives here: you can add **our package repositories** to your system, or visit the [software menu](http://opennebula.io/use) to **download the latest package** for your Linux distribution.
 
-If there are no packages for your distribution, please check the [build dependencies](https://docs.opennebula.io/stable/integration_and_development/references/build_deps.html) for OpenNebula and head to the [Building from Source Code guide](https://docs.opennebula.io/stable/integration_and_development/references/compile.html).
+If there are no packages for your distribution, please check the [build dependencies](https://docs.opennebula.io/stable/software/installation_process/build_from_source_code/build_deps/) for OpenNebula and head to the [Building from Source Code guide](https://docs.opennebula.io/stable/software/installation_process/build_from_source_code/compile/).
 
 ### Node Installation
 
-After the OpenNebula Front-end is correctly set up, the next step is preparing the hosts where the VMs are going to run. Please refer to the [deployment guide](https://docs.opennebula.io/stable/open_cluster_deployment/index.html) site for details.
+After the OpenNebula Front-end is correctly set up, the next step is preparing the hosts where the VMs are going to run. For details please refer to the installation guides for [KVM Nodes](https://docs.opennebula.io/stable/software/installation_process/manual_installation/kvm_node_installation/) and [LXC Nodes](https://docs.opennebula.io/stable/software/installation_process/manual_installation/lxc_node_installation/).
 
 ## Contact
 
@@ -58,7 +55,7 @@ After the OpenNebula Front-end is correctly set up, the next step is preparing t
 
 ## License
 
-Copyright 2002-2024, OpenNebula Project, OpenNebula Systems (formerly C12G Labs)
+Copyright 2002-2025, OpenNebula Project, OpenNebula Systems (formerly C12G Labs)
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
@@ -66,8 +63,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 ## Acknowledgements
 
-Some of the software features included in this repository have been made possible through the funding of the following innovation projects:
-
-- [SovereignEdge.Cognit](https://cognit.sovereignedge.eu/) (Grant Agreement 101092711), through the European Union’s Horizon Europe Research and Innovation Programme.
-- [ONEedge5G](https://opennebula.io/innovation/oneedge5g/) (Grant Agreement TSI-064200-2023-1), supported by the Spanish Ministry for Digital Transformation and Civil Service through the UNICO I+D 6G Program, co-funded by the European Union – NextGenerationEU through the Recovery and Resilience Facility (RRF).
-- [ONEnextgen](http://onenextgen.eu/) (Grant Agreement UNICO IPCEI-2023-003), supported by the Spanish Ministry for Digital Transformation and Civil Service through the UNICO IPCEI Program, co-funded by the European Union – NextGenerationEU through the Recovery and Resilience Facility (RRF).
+Some of the software features included in this repository have been made possible through the funding of the following innovation projects: [ONEnextgen](http://onenextgen.eu/), [ONEedge5G](https://opennebula.io/innovation/oneedge5g/), and [SovereignEdge.Cognit](https://cognit.sovereignedge.eu/).

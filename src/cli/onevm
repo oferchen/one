@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -27,23 +27,7 @@ else
 end
 
 # %%RUBYGEMS_SETUP_BEGIN%%
-if File.directory?(GEMS_LOCATION)
-    real_gems_path = File.realpath(GEMS_LOCATION)
-    if !defined?(Gem) || Gem.path != [real_gems_path]
-        $LOAD_PATH.reject! {|l| l =~ /vendor_ruby/ }
-
-        # Suppress warnings from Rubygems
-        # https://github.com/OpenNebula/one/issues/5379
-        begin
-            verb = $VERBOSE
-            $VERBOSE = nil
-            require 'rubygems'
-            Gem.use_paths(real_gems_path)
-        ensure
-            $VERBOSE = verb
-        end
-    end
-end
+require 'load_opennebula_paths'
 # %%RUBYGEMS_SETUP_END%%
 
 $LOAD_PATH << RUBY_LIB_LOCATION
@@ -1140,6 +1124,24 @@ CommandParser::CmdParser.new(ARGV) do
         end
     end
 
+    snapshot_list_desc = <<-EOT.unindent
+        Lists the snapshots of a VM
+    EOT
+
+    command :"snapshot-list", snapshot_list_desc, :vmid do
+        vm = helper.retrieve_resource(args[0])
+        vm.info
+
+        if vm.has_elements?('/VM/TEMPLATE/SNAPSHOT')
+            CLIHelper.print_header('SNAPSHOTS'.ljust(80), false)
+
+            helper.format_template_snapshots(vm)
+        else
+            puts 'No snapshots available'
+        end
+        0
+    end
+
     disk_snapshot_create_desc = <<-EOT.unindent
         Takes a new snapshot of the given disk. This operation needs support
         from the Datastore drivers: QCOW2 or Ceph.
@@ -1432,9 +1434,9 @@ CommandParser::CmdParser.new(ARGV) do
         GRAPHICS  = ["TYPE", "LISTEN", "PASSWD", "KEYMAP", "COMMAND"]
         VIDEO     = ["TYPE", "IOMMU", "ATS", "VRAM", "RESOLUTION"]
         RAW       = ["DATA", "DATA_VMX", "TYPE", "VALIDATE"]
-        CPU_MODEL = ["MODEL"]
+        CPU_MODEL = ["MODEL", "FEATURES"]
         BACKUP_CONFIG = ["FS_FREEZE", "KEEP_LAST", "BACKUP_VOLATILE", "MODE", "INCREMENT_MODE"]
-        CONTEXT (any value, except ETH*, **variable substitution will be made**)
+        CONTEXT (any value, ETH* if CONTEXT_ALLOW_ETH_UPDATES set in oned.conf, **variable substitution will be made**)
     EOT
 
     command :updateconf, updateconf_desc, :vmid, [:file, nil],

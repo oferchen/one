@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -36,6 +36,7 @@ class ObjectXML;
  *     <FS_FREEZE> FS freeze operation to perform on the VM
  *     <MODE> Backup mode
  *     <LAST_DATASTORE_ID> The dastore ID used to store the active backups(*)
+ *     <LAST_BRIDGE> The bridge used to export the active backups(*)
  *     <LAST_BACKUP_ID> ID of the active backup(*)
  *     <LAST_BACKUP_SIZE> SIZE of the active backup(*)
  *     <ACTIVE_FLATTEN> if true current chain is being flatten
@@ -122,6 +123,7 @@ public:
      *  The following attributes are stored in the configuration and refers
      *  only to the active backup operation
      *     - LAST_DATASTORE_ID
+     *     - LAST_BRIDGE
      *     - LAST_BACKUP_ID
      *     - LAST_BACKUP_SIZE
      *
@@ -131,11 +133,12 @@ public:
      *     - INCREMENTAL_BACKUP_ID
      * @param tmpl Template to parse, the root element must be BACKUP_CONFIG
      * @param can_increment VM disks support incremental backup
+     * @param can_keep_last_increment VM disks support KEEP_LAST for INCREMENT mode
      * @param append Only append new values from tmpl
      * @param error_str Returns the error reason, if any
      * @return 0 success, -1 error
      */
-    int parse(Template *tmpl, bool can_increment,
+    int parse(Template *tmpl, bool can_increment, bool can_keep_last_increment,
               bool append, std::string& error_str);
 
     /**
@@ -163,6 +166,11 @@ public:
     void last_datastore_id(int ds_id)
     {
         config.replace("LAST_DATASTORE_ID", ds_id);
+    }
+
+    void last_bridge(const std::string& bridge)
+    {
+        config.replace("LAST_BRIDGE", bridge);
     }
 
     void last_backup_id(const std::string& id)
@@ -209,6 +217,15 @@ public:
         config.get("LAST_DATASTORE_ID", dst);
 
         return dst;
+    }
+
+    std::string last_bridge() const
+    {
+        std::string bridge;
+
+        config.get("LAST_BRIDGE", bridge);
+
+        return bridge;
     }
 
     std::string last_backup_id() const
@@ -294,6 +311,7 @@ public:
     void last_backup_clear()
     {
         config.erase("LAST_DATASTORE_ID");
+        config.erase("LAST_BRIDGE");
 
         config.erase("LAST_BACKUP_ID");
         config.erase("LAST_BACKUP_SIZE");

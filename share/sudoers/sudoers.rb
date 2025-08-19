@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -17,7 +17,7 @@
 # Holds configuration about sudoers requirements for OpeNebula
 class Sudoers
 
-    NODECMDS = [:NET, :NETNS, :OVS, :LVM, :LXC, :MEM, :VGPU]
+    NODECMDS = [:NET, :NETNS, :OVS, :LVM, :LXC, :MEM, :VGPU, :NFS, :NETAPP]
 
     attr_accessor :cmds
 
@@ -25,7 +25,6 @@ class Sudoers
         # Commands required to be used as root, without password, by oneadmin
         @cmds = {
             :NET => [
-                'ebtables',
                 'iptables',
                 'ip6tables',
                 'ipset',
@@ -48,7 +47,8 @@ class Sudoers
                 '/var/tmp/one/vnm/ip_netns_exec ip route *'
             ],
             :LVM => [
-                'lvcreate', 'lvremove', 'lvs', 'vgdisplay', 'lvchange', 'lvscan', 'lvextend'
+                'lvcreate', 'lvremove', 'lvs', 'vgdisplay', 'lvchange', 'lvscan', 'lvextend',
+                'dmsetup'
             ],
             :OVS => ['ovs-ofctl', 'ovs-vsctl'],
             :CEPH => ['rbd'],
@@ -77,7 +77,9 @@ class Sudoers
             ],
             :MARKET => ["#{lib_location}/sh/create_container_image.sh"],
             :MEM => ['sysctl vm.drop_caches=3 vm.compact_memory=1'],
-            :VGPU => ['sudo', '/var/tmp/one/vgpu']
+            :VGPU => ['sudo', '/var/tmp/one/vgpu'],
+            :NFS => ['mount', 'umount', '/usr/bin/sed -i -f /proc/self/fd/0 /etc/fstab'],
+            :NETAPP => ['blockdev', 'multipath', 'multipathd', 'iscsiadm', 'tee', 'find']
         }
     end
 

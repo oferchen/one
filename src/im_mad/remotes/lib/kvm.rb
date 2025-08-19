@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -21,6 +21,7 @@ require 'base64'
 require 'json'
 require 'yaml'
 require 'rexml/document'
+require 'sqlite3'
 
 require_relative 'process_list'
 require_relative 'domain'
@@ -145,6 +146,21 @@ end
 #-------------------------------------------------------------------------------
 class Domain < BaseDomain
 
+    DB_PATH = '/var/tmp/one_db'
+
+    def initialize(name)
+        super(name)
+
+        @predictions = true
+
+        path = "#{__dir__}/../../etc/im/kvm-probes.d/forecast.conf"
+        conf = YAML.load_file(path)
+
+        @db_retention = Integer(conf['vm']['db_retention'])
+    rescue StandardError
+        @db_retention = 4
+    end
+
     # Gets the information of the domain, fills the @vm hash using ProcessList
     # and virsh dominfo
     def info
@@ -197,6 +213,16 @@ class Domain < BaseDomain
 
         @vm[:state]  = state
         @vm[:reason] = reason
+
+        # VM system datastore path
+        xml, _e, s = KVM.virsh(:dumpxml, @name)
+
+        @vm[:system_datastore] = begin
+            doc = REXML::Document.new(xml)
+            doc.elements['/domain/metadata/one:vm/one:system_datastore']&.text
+        rescue 'StandardError'
+            nil
+        end if s.success?
 
         ga_stats
         io_stats
@@ -258,6 +284,22 @@ class Domain < BaseDomain
         tmpl << vnc_txt << "\n" unless vnc_txt.empty?
 
         tmpl
+    rescue StandardError
+        ''
+    end
+
+    # Compute forecast values for the VM metrics
+    def predictions
+        base = '/var/tmp/one/im/lib/python/prediction.sh'
+        cmd  = "#{base} --entity virtualmachine,#{@vm[:id]},#{@vm[:uuid]},#{DB_PATH}"
+
+        o, _e, s = Open3.capture3 cmd
+
+        if s.success?
+            o
+        else
+            ''
+        end
     rescue StandardError
         ''
     end
@@ -387,6 +429,7 @@ module DomainList
         domains = KVMDomains.new
 
         domains.info
+        domains.to_sql
         domains.to_monitor
     end
 

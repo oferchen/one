@@ -23,6 +23,8 @@
         <xs:element name="VM_MAD" type="xs:string"/>
         <xs:element name="TM_MAD" type="xs:string"/>
         <xs:element name="DS_ID" type="xs:integer"/>
+        <xs:element name="PLAN_ID" type="xs:integer"/>
+        <xs:element name="ACTION_ID" type="xs:integer"/>
         <xs:element name="PSTIME" type="xs:integer"/>
         <xs:element name="PETIME" type="xs:integer"/>
         <xs:element name="RSTIME" type="xs:integer"/>
@@ -166,6 +168,7 @@
                         <xs:element name="KEEP_LAST" type="xs:string" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="LAST_BACKUP_ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="LAST_BACKUP_SIZE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                        <xs:element name="LAST_BRIDGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="LAST_DATASTORE_ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="LAST_INCREMENT_ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
                         <xs:element name="MODE" type="xs:string" minOccurs="0" maxOccurs="1"/>

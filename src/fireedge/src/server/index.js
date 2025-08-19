@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -27,7 +27,6 @@ import {
   defaultPort,
   defaultWebpackMode,
   endpointExternalGuacamole,
-  endpointVmrc,
 } from './utils/constants/defaults'
 import { getLoggerMiddleware, initLogger } from './utils/logger'
 import {
@@ -42,12 +41,9 @@ import express from 'express'
 import helmet from 'helmet'
 import http from 'http'
 import { resolve } from 'path'
-import { env } from 'process'
-import webpack from 'webpack'
 import guacamole from './routes/websockets/guacamole'
 import guacamoleProxy from './routes/websockets/guacamoleProxy'
 import opennebulaWebsockets from './routes/websockets/opennebula'
-import vmrc from './routes/websockets/vmrc'
 import { messageTerminal } from './utils/general'
 import { getFireedgeConfig } from './utils/yml'
 
@@ -68,45 +64,32 @@ const app = express()
 const basename = defaultAppName ? `/${defaultAppName}` : ''
 
 let frontPath = 'client'
+let remoteModulesPath = 'modules'
+
+if (process.env.NODE_ENV === defaultWebpackMode) {
+  frontPath = `../../dist/${frontPath}`
+  remoteModulesPath = `../../dist/${remoteModulesPath}`
+}
 
 // settings
 const host = appConfig.host || defaultHost
 const port = appConfig.port || defaultPort
 
-if (env?.NODE_ENV === defaultWebpackMode) {
-  try {
-    const webpackConfig = require('../../webpack.config.dev.client')
-    const compiler = webpack(webpackConfig)
-
-    app.use(
-      // eslint-disable-next-line import/no-extraneous-dependencies
-      require('webpack-dev-middleware')(compiler, {
-        publicPath: webpackConfig.output.publicPath,
-      })
-    )
-
-    app.use(
-      // eslint-disable-next-line import/no-extraneous-dependencies
-      require('webpack-hot-middleware')(compiler, {
-        path: '/__webpack_hmr',
-        heartbeat: 10 * 1000,
-      })
-    )
-  } catch (error) {
-    if (error) {
-      messageTerminal({
-        color: 'red',
-        error,
-      })
-    }
-  }
-  frontPath = '../client'
-}
 app.use(helmet.xssFilter())
 app.use(helmet.hidePoweredBy())
 app.use(compression())
 app.use(`${basename}/client`, express.static(resolve(__dirname, frontPath)))
 app.use(`${basename}/client/*`, express.static(resolve(__dirname, frontPath)))
+
+// Remote modules serving
+app.use(
+  `${basename}/modules`,
+  express.static(resolve(__dirname, remoteModulesPath))
+)
+app.use(
+  `${basename}/modules/*`,
+  express.static(resolve(__dirname, remoteModulesPath))
+)
 
 const loggerMiddleware = getLoggerMiddleware()
 if (loggerMiddleware) {
@@ -119,9 +102,9 @@ if (appConfig.cors) {
 }
 // post params parser body
 app.use(express.urlencoded({ extended: false }))
-app.use(express.json())
+app.use(express.json({ limit: '4mb' }))
 
-app.use(`${basename}/api`, entrypointApi) // opennebula Api routes
+app.use(`${basename}/api`, entrypointApi) // OpenNebula Api routes
 const frontApps = Object.keys(defaultApps)
 frontApps.forEach((frontApp) => {
   app.get(`${basename}/${frontApp}`, entrypointApp)
@@ -145,9 +128,7 @@ guacamole(appServer)
 appServer.on('upgrade', (req, socket, head) => {
   const url = req?.url
 
-  if (url.startsWith(endpointVmrc)) {
-    vmrc.upgrade(req, socket, head)
-  } else if (url.startsWith(endpointExternalGuacamole)) {
+  if (url.startsWith(endpointExternalGuacamole)) {
     guacamoleProxy.upgrade(req, socket, head)
   }
 })

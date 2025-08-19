@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -410,6 +410,13 @@ int ImagePool::acquire_disk(int               vm_id,
 
             return -1;
         }
+    }
+
+    // Generate SERIAL if set to "auto"
+    if (disk->vector_value("SERIAL") == "auto")
+    {
+        string serial = std::to_string(vm_id) + "-" + std::to_string(disk_id);
+        disk->replace("SERIAL", serial);
     }
 
     disk->replace("DISK_ID", disk_id);

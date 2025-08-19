@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -50,7 +50,7 @@ module VirtualMachineManagerKVM
         File.readlines(path).each do |l|
             next if l.empty? || l[0] == '#'
 
-            m = l.match(/(export)?[[:blank:]]*([^=]+)=([^[[:blank:]]]+)$/)
+            m = l.match(/(export)?[[:blank:]]*([^=]+)=([[:blank:]]*(['"]).*?\4|[^#\n]*)/)
 
             next unless m
 

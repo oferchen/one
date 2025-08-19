@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -17,73 +17,23 @@
 #--------------------------------------------------------------------------- #
 
 require 'rexml/document'
+
 require_relative 'datastore'
-require_relative 'kvm'
+require_relative 'backup'
+require_relative 'shell'
 
 module TransferManager
 
     # Ceph utils
     class Ceph
 
-        # VM containing Ceph disks
-        class VM
-
-            include TransferManager::KVM
+        # VM with Ceph disk initialization
+        class VM < TransferManager::VM
 
             def initialize(vm_xml)
-                @xml = vm_xml
-                @disks = Disk.from_vm(@xml)
-            end
+                disks = Disk.from_vm(vm_xml)
 
-            def backup_disks_sh(disks, backup_dir, ds, live, deploy_id = nil)
-                snap_cmd = ''
-                expo_cmd = ''
-                clup_cmd = ''
-                @disks.compact.each do |d|
-                    did = d.id
-                    next unless disks.include? did.to_s
-
-                    cmds = d.backup_cmds(backup_dir, ds, live)
-                    snap_cmd << cmds[:snapshot]
-                    expo_cmd << cmds[:export]
-                    clup_cmd << cmds[:cleanup]
-                end
-
-                freeze, thaw =
-                    if live
-                        fsfreeze(@xml, deploy_id)
-                    else
-                        ['', '']
-                    end
-
-                <<~EOS
-                    set -ex -o pipefail
-
-                    # ----------------------
-                    # Prepare backup folder
-                    # ----------------------
-                    [ -d #{backup_dir} ] && rm -rf #{backup_dir}
-
-                    mkdir -p #{backup_dir}
-
-                    echo "#{Base64.encode64(@xml)}" > #{backup_dir}/vm.xml
-
-                    # --------------------------------
-                    # Create Ceph snapshots for disks
-                    # --------------------------------
-                    #{freeze}
-
-                    #{snap_cmd}
-
-                    #{thaw}
-
-                    # --------------------------
-                    # export, convert & cleanup
-                    # --------------------------
-                    #{expo_cmd}
-
-                    #{clup_cmd}
-                EOS
+                super(vm_xml, disks)
             end
 
         end
@@ -124,10 +74,21 @@ module TransferManager
                         end
                 end
 
+                ceph_user  = disk_xml.elements['CEPH_USER']&.text
+                ceph_key   = disk_xml.elements['CEPH_KEY']&.text
+                ceph_conf  = disk_xml.elements['CEPH_CONF']&.text
+
+                @ceph_env = []
+                @ceph_env << "CEPH_USER=\"#{ceph_user}\"" if ceph_user && !ceph_user.empty?
+                @ceph_env << "CEPH_CONF=\"#{ceph_conf}\"" if ceph_conf && !ceph_conf.empty?
+                @ceph_env << "CEPH_KEY=\"#{ceph_key}\""   if ceph_key && !ceph_key.empty?
+
+                @ceph_env = @ceph_env.join(' ')
+
                 @rbd_cmd = 'rbd'
                 @rbd_cmd += Ceph.xml_opt(disk_xml, 'CEPH_USER', '--id')
-                @rbd_cmd += Ceph.xml_opt(disk_xml, 'CEPH_KEY', '--keyfile')
                 @rbd_cmd += Ceph.xml_opt(disk_xml, 'CEPH_CONF', '--conf')
+                @rbd_cmd += Ceph.xml_opt(disk_xml, 'CEPH_KEY', '--keyfile')
 
                 bc   = @vm.elements['BACKUPS/BACKUP_CONFIG']
                 mode = bc.elements['MODE']&.text if bc
@@ -174,11 +135,16 @@ module TransferManager
             # @param backup_dir [String]
             # @param ds [TransferManager::Datastore]
             # @param live [Boolean]
+            # @param format [String, nil] 'rbd' for rbdiff format, nil for raw
             # @return [Disk]
-            def backup_cmds(backup_dir, ds, live)
+            def backup_cmds(backup_dir, ds, live, format = nil)
                 snap_cmd = ''
                 expo_cmd = ''
-                clup_cmd = ''
+
+                snap_clup = ''
+                expo_clup = ''
+
+                backup_util = '/var/tmp/one/tm/lib/backup_rbd.rb'
 
                 if @vm_backup_config[:mode] == :full
                     # Full backup
@@ -193,7 +159,7 @@ module TransferManager
                             "#{@rbd_cmd} export #{snapshot} #{draw}\n",
                             backup_dir
                         )
-                        clup_cmd << "#{@rbd_cmd} snap rm #{snapshot}\n"
+                        snap_clup << "#{@rbd_cmd} snap rm #{snapshot}\n"
                     else
                         expo_cmd << ds.cmd_confinement(
                             "#{@rbd_cmd} export #{@rbd_image} #{draw}\n",
@@ -206,16 +172,16 @@ module TransferManager
                         backup_dir
                     )
 
-                    clup_cmd << "rm -f #{draw}\n"
+                    expo_clup << "rm -f #{draw}\n"
 
                     # Remove old incremental snapshots after starting a full one
-                    clup_cmd << rm_snaps_sh({ :type => :prefix, :text => INC_SNAP_PREFIX })
+                    snap_clup << rm_snaps_sh({ :type => :prefix, :text => INC_SNAP_PREFIX })
 
                 elsif @vm_backup_config[:last_increment] == -1
                     # First incremental backup (similar to full but snapshot must be preserved)
                     incid = 0
 
-                    dexp     = "#{backup_dir}/disk.#{@id}.rbd2"
+                    dexp     = "#{backup_dir}/disk.#{@id}.#{incid}"
                     snapshot = "#{@rbd_image}@#{INC_SNAP_PREFIX}#{incid}"
 
                     snap_cmd << <<~EOF
@@ -225,14 +191,15 @@ module TransferManager
                     EOF
 
                     expo_cmd << ds.cmd_confinement(
-                        "#{@rbd_cmd} export --export-format 2 #{snapshot} #{dexp}\n",
+                        "env #{@ceph_env} " +
+                        "ruby #{backup_util} #{@rbd_image} NONE #{snapshot} #{dexp}\n",
                         backup_dir
                     )
                 else
                     # Incremental backup
                     incid = @vm_backup_config[:last_increment] + 1
 
-                    dinc     = "#{backup_dir}/disk.#{@id}.#{incid}.rbdiff"
+                    dinc     = "#{backup_dir}/disk.#{@id}.#{incid}"
                     snapshot = "#{@rbd_image}@one_backup_#{incid}"
 
                     last_snap = "one_backup_#{@vm_backup_config[:last_increment]}"
@@ -240,19 +207,32 @@ module TransferManager
                     snap_cmd << "#{@rbd_cmd} snap create #{snapshot}\n"
                     snap_cmd << "#{@rbd_cmd} snap protect #{snapshot}\n"
 
-                    expo_cmd << ds.cmd_confinement(
-                        "#{@rbd_cmd} export-diff --from-snap #{last_snap} #{snapshot} #{dinc}\n",
-                        backup_dir
-                    )
+                    if format == 'rbd'
+                        dinc += '.rbdiff'
+
+                        expo_cmd << ds.cmd_confinement(
+                            "#{@rbd_cmd} export-diff " \
+                            "--from-snap #{last_snap} #{snapshot} #{dinc}\n",
+                            backup_dir
+                        )
+                    else
+                        expo_cmd << ds.cmd_confinement(
+                            "env #{@ceph_env} " +
+                            "ruby #{backup_util} #{@rbd_image} #{last_snap} #{snapshot} #{dinc}\n",
+                            backup_dir
+                        )
+                    end
 
                     old_snapshot = "one_backup_#{@vm_backup_config[:last_increment]}"
-                    clup_cmd << rm_snaps_sh({ :type => :eq, :text => old_snapshot })
+                    snap_clup << rm_snaps_sh({ :type => :eq, :text => old_snapshot })
                 end
 
                 {
-                    :snapshot => snap_cmd,
-                    :export => expo_cmd,
-                    :cleanup => clup_cmd
+                    :snapshot      => snap_cmd,
+                    :export        => expo_cmd,
+                    :snapshot_clup => snap_clup,
+                    :export_clup   => expo_clup,
+                    :cleanup       => snap_clup + expo_clup
                 }
             end
 
@@ -272,15 +252,15 @@ module TransferManager
 
                 <<~EOF
                     # Upload base image and snapshot
-                    #{Disk.sshwrap(bridge, "#{rbdec_cmd} import --export-format 2 - #{target}")} < disk.*.rbd2
+                    #{TransferManager::Shell.sshwrap(bridge, "#{rbdec_cmd} import --export-format 2 - #{target}")} < disk.*.rbd2
 
                     # Apply increments
                     for f in $(ls disk.*.*.rbdiff | sort -k3 -t.); do
-                        #{Disk.sshwrap(bridge, "#{@rbd_cmd} import-diff - #{target}")} < $f
+                        #{TransferManager::Shell.sshwrap(bridge, "#{@rbd_cmd} import-diff - #{target}")} < $f
                     done
 
                     # Delete snapshots
-                    #{Disk.sshwrap(bridge, rm_snaps_sh({ :type => :prefix, :text => INC_SNAP_PREFIX }, target))}
+                    #{TransferManager::Shell.sshwrap(bridge, rm_snaps_sh({ :type => :prefix, :text => INC_SNAP_PREFIX }, target))}
                 EOF
             end
 
@@ -328,23 +308,6 @@ module TransferManager
                 end
 
                 indexed_disks
-            end
-
-            # TODO: move to Shell.rb (f-5853)
-            def self.sshwrap(host, cmd)
-                cmd << "\n"
-                if host.nil?
-                    cmd
-                else
-                    <<~EOF.strip
-                        ssh '#{host}' '\
-                            script="$(mktemp)"; \
-                            echo "#{Base64.strict_encode64(cmd)}" | base64 -d > "$script"; \
-                            trap "rm $script" EXIT; \
-                            bash "$script"; \
-                        '
-                    EOF
-                end
             end
 
         end

@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------- *
- * Copyright 2002-2024, OpenNebula Project, OpenNebula Systems               *
+ * Copyright 2002-2025, OpenNebula Project, OpenNebula Systems               *
  *                                                                           *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may   *
  * not use this file except in compliance with the License. You may obtain   *
@@ -84,7 +84,6 @@ const coreAuth = (
   oneConnection = defaultEmptyFunction
 ) => {
   const { user, token, type, token2fa, remember } = params
-  setRes(res)
   setNext(next)
   setNodeConnect(oneConnection)
   updaterResponse(new Map(internalServerError).toObject())
@@ -97,6 +96,7 @@ const coreAuth = (
      * @param {object} opennebulaUserData - opennebula user data
      */
     const success = (opennebulaUserData) => {
+      setRes(res)
       setUser(user || '')
       setPass(token || '')
       setType(type || '')
@@ -111,9 +111,15 @@ const coreAuth = (
      * @param {string} err - error.
      */
     const error = (err) => {
+      setRes(res)
       const httpCodeError = err ? internalServerError : unauthorized
       updaterResponse(new Map(httpCodeError).toObject())
-      writeInLogger(httpCodeError)
+
+      const errorLogMessage = err
+        ? [[err], { format: 'Login user: %s' }]
+        : [httpCodeError?.message]
+
+      writeInLogger(...errorLogMessage)
       next()
     }
 
@@ -149,17 +155,16 @@ const remoteAuth = (
   typeAuth
 ) => {
   const { user } = params
-  setRes(res)
   setNext(next)
   setNodeConnect(oneConnection)
   updaterResponse(new Map(internalServerError).toObject())
   if (user) {
     switch (typeAuth) {
       case 'x509':
-        x509Login(user)
+        x509Login(user, res)
         break
       default:
-        remoteLogin(user)
+        remoteLogin(user, res)
         break
     }
   } else {

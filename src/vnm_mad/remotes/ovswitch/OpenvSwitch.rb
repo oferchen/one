@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -39,10 +39,10 @@ class OpenvSwitchVLAN < VNMMAD::VNMDriver
     ]
 
     def initialize(vm, xpath_filter = nil, deploy_id = nil)
-        @locking = false
-
         xpath_filter ||= XPATH_FILTER
         super(vm, xpath_filter, deploy_id)
+
+        @locking = false
     end
 
     def activate
@@ -550,7 +550,7 @@ class OpenvSwitchVLAN < VNMMAD::VNMDriver
 
     # Delete OvS bridge
     def delete_bridge
-        LocalCommand.run_sh("#{command(:ovs_vsctl)} del-br #{@nic[:bridge]}")
+        LocalCommand.run_sh("#{command(:ovs_vsctl)} --if-exists del-br #{@nic[:bridge]}")
 
         @bridges.delete(@nic[:bridge])
     end
@@ -559,7 +559,7 @@ class OpenvSwitchVLAN < VNMMAD::VNMDriver
     def add_bridge_port(port, dpdk_path = nil)
         return if @bridges[@nic[:bridge]].include? port
 
-        ovs_cmd = "#{command(:ovs_vsctl)} add-port #{@nic[:bridge]} #{port}"
+        ovs_cmd = "#{command(:ovs_vsctl)} --may-exist add-port #{@nic[:bridge]} #{port}"
 
         if dpdk_path && dpdk?
             ovs_cmd << " -- set Interface #{port} type=dpdkvhostuserclient"\
@@ -576,7 +576,7 @@ class OpenvSwitchVLAN < VNMMAD::VNMDriver
         LocalCommand.run_sh("#{command(:ovs_vsctl)} --if-exists del-port " \
                                 "#{@nic[:bridge]} #{port}")
 
-        @bridges[@nic[:bridge]].delete(port)
+        @bridges[@nic[:bridge]]&.delete(port)
     end
 
     # Calls ovs-vsctl set bridge to set options stored in ovs_bridge_conf

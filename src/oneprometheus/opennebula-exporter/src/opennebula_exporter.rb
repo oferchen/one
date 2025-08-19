@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -84,7 +84,7 @@ end
 
 # Default Options
 set :port, 9925
-set :bind, '0.0.0.0'
+set :bind, '::'
 
 # Run the Sinatra application
 set :run, false

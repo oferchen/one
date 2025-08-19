@@ -2,7 +2,7 @@
 // +build !disabled
 
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -29,6 +29,7 @@ import (
 	dskeys "github.com/OpenNebula/one/src/oca/go/src/goca/schemas/datastore/keys"
 	"github.com/OpenNebula/one/src/oca/go/src/goca/schemas/vm"
 	"github.com/OpenNebula/one/src/oca/go/src/goca/schemas/vm/keys"
+	"github.com/OpenNebula/one/src/oca/go/src/goca/errors"
 	. "gopkg.in/check.v1"
 )
 
@@ -381,10 +382,10 @@ func (s *VMSuite) TestVMBackup(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(WaitResource(VMExpectState(c, s.vmID, "ACTIVE", "RUNNING")), Equals, true)
 
-	// Cancel Backup
-	vmC.Backup(s.dsID, false)
+	// Cancel Backup - no backup in progress, action should fail
 	err = vmC.BackupCancel()
-	c.Assert(err, IsNil)
+	oneErr, _ := err.(*errors.ResponseError);
+	c.Assert(int(oneErr.Code), Equals, errors.OneInternalError)
 	c.Assert(WaitResource(VMExpectState(c, s.vmID, "ACTIVE", "RUNNING")), Equals, true)
 
 	// Restore VM disks from backup Image

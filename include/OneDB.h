@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------------ */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems              */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems              */
 /*                                                                          */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may  */
 /* not use this file except in compliance with the License. You may obtain  */
@@ -86,6 +86,13 @@ namespace one_db
     extern const char * cluster_network_db_bootstrap;
 
     extern const char * cluster_bitmap_table;
+
+    /* ---------------------------------------------------------------------- */
+    /* Plan tables                                                         */
+    /* ---------------------------------------------------------------------- */
+    extern const char * plan_table;
+    extern const char * plan_db_names;
+    extern const char * plan_db_bootstrap;
 
     /* ---------------------------------------------------------------------- */
     /* ACL tables                                                             */

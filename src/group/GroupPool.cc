@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -75,7 +75,7 @@ GroupPool::GroupPool(SqlDB * db, bool is_slave,
         if (rc < 0)
         {
             ostringstream oss;
-  
+
             oss << "Error trying to create default group: " << error_str;
             NebulaLog::log("GROUP", Log::ERROR, oss);
 
@@ -94,7 +94,7 @@ GroupPool::GroupPool(SqlDB * db, bool is_slave,
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int GroupPool::allocate(string name, int * oid, string& error_str)
+int GroupPool::allocate(const string& name, int * oid, string& error_str)
 {
     *oid = -1;
 

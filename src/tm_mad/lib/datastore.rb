@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -19,6 +19,7 @@ require 'securerandom'
 require 'pathname'
 require 'opennebula'
 require 'rexml/document'
+require 'rexml/xpath'
 
 module TransferManager
 
@@ -276,6 +277,21 @@ module TransferManager
             rcmd << "#{NICE} -n #{nice} " if nice != -1
             rcmd << "#{IONICE} -c2 -n#{ionice} " if ionice != -1
             rcmd << cmd
+        end
+
+        # Converts datastore XML into a hash.
+        # Returns an empty string for missing entries.
+        def xml_to_hash
+            doc = REXML::Document.new(@ds.to_xml)
+            hash = {}
+
+            REXML::XPath.each(doc, '//*') do |elem|
+                next if elem.text.nil? || elem.text.strip.empty?
+
+                hash[elem.xpath] = elem.text.strip
+            end
+
+            hash
         end
 
     end

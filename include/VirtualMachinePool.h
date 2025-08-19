@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -162,6 +162,17 @@ public:
      *   @return 0 on success
      */
     int get_backup(std::vector<int>& oids);
+
+    /**
+     *  Function to get the IDs of VMs deployd on specific cluster
+     *   @param user_id user ID or -1
+     *   @param group_id group ID or -1
+     *   @param cid a cluster ID
+     *   @param oids a vector that contains the IDs
+     *   @return 0 on success
+     */
+    int get_cluster_vms(int user_id, int group_id, int cid,
+                        std::vector<int>& oids);
 
     /**
      *  Gets the IDs of VMs matching the given SQL where string.

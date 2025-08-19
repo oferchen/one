@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -21,10 +21,9 @@ module LXDMarket
 
     class << self
 
-        # TODO: Make configurable
         def template(options = {})
             unindent(<<-EOS)
-        SCHED_REQUIREMENTS = \"HYPERVISOR=\\\"lx*\\\"\"
+        SCHED_REQUIREMENTS = \"HYPERVISOR=lxc & ARCH=#{options[:arch]}\"
         CPU = \"#{options[:cpu]}\"
         VCPU = \"#{options[:vcpu]}\"
         MEMORY = \"#{options[:memory]}\"
@@ -37,7 +36,12 @@ module LXDMarket
             NETWORK  =\"YES\",
             SSH_PUBLIC_KEY  =\"$USER[SSH_PUBLIC_KEY]\",
             SET_HOSTNAME  =\"$NAME\"
-        ]"
+        ]
+        RAW = [
+            TYPE=\"lxc\",
+            DATA=\"#{options[:raw]}\"
+        ]
+        HYPERVISOR = \"lxc\"
             EOS
         end
 

@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                */
+/* Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                */
 /*                                                                            */
 /* Licensed under the Apache License, Version 2.0 (the "License"); you may    */
 /* not use this file except in compliance with the License. You may obtain    */
@@ -69,7 +69,7 @@ VdcPool::VdcPool(SqlDB * db, bool is_federation_slave)
         vdc->add_group(GroupPool::USERS_ID, error_str);
         vdc->add_cluster(Nebula::instance().get_zone_id(), Vdc::ALL_RESOURCES, error_str);
 
-        update(vdc.get());
+        VdcPool::update(vdc.get());
 
         // The first 100 Vdc IDs are reserved for system Vdcs.
         // Regular ones start from ID 100

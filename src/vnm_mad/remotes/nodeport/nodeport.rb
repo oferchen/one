@@ -1,6 +1,6 @@
 # rubocop:disable Naming/FileName
 # -------------------------------------------------------------------------- #
-# Copyright 2002-2024, OpenNebula Project, OpenNebula Systems                #
+# Copyright 2002-2025, OpenNebula Project, OpenNebula Systems                #
 #                                                                            #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may    #
 # not use this file except in compliance with the License. You may obtain    #
@@ -28,9 +28,9 @@ class NodePortDriver < VNMMAD::VNMDriver
 
     # Class constructor
     def initialize(vm)
-        @locking = true
-
         super(Base64.decode64(vm), XPATH_FILTER, nil)
+
+        @locking = true
     end
 
     # Adds the following elements:
