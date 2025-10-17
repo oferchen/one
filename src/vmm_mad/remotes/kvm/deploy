@@ -63,11 +63,24 @@ if [ "x$CLEANUP_MEMORY_ON_START" = "xyes" ]; then
 fi
 
 #-------------------------------------------------------------------------------
-# Create non-volatile memory to store firmware variables if needed
+# Create non-volatile memory to store firmware variables and convert if needed
 #-------------------------------------------------------------------------------
 nvram="$(xmllint --xpath '/domain/os/nvram/text()' $DEP_FILE 2>/dev/null)"
+nvram_fmt="$(xmllint --xpath 'string(/domain/os/nvram/@format)' "$DEP_FILE" 2>/dev/null)"
 if [ -n "${nvram}" ]; then
-    cp -n "${OVMF_NVRAM}" "${nvram}"
+    mkdir -p "$(dirname "$nvram")"
+
+    if [ -z "$nvram_fmt" ]; then
+        nvram_fmt="raw"
+    fi
+
+    fmt="$(qemu-img info -U --output=json "$OVMF_NVRAM" | jq -r '.format')"
+
+    if [ "$fmt" != "$nvram_fmt" ]; then
+        qemu-img convert -O "$nvram_fmt" "$OVMF_NVRAM" "$nvram"
+    else
+        cp -n "$OVMF_NVRAM" "$nvram"
+    fi
 fi
 
 #-------------------------------------------------------------------------------
@@ -75,6 +88,25 @@ fi
 #     https://docs.nvidia.com/grid/latest/pdf/grid-vgpu-user-guide.pdf
 #-------------------------------------------------------------------------------
 (sudo -l | grep -q vgpu) && sudo /var/tmp/one/vgpu "CREATE" "$DEP_FILE_LOCATION/vm.xml"
+
+#---------------------------------------------------------------------------
+# Recover vTPM directory
+#---------------------------------------------------------------------------
+
+# If there's no saved TPM, try to get it from template (after backup restores)
+if [ ! -d "$DEP_FILE_LOCATION/tpm" ]; then
+    {
+        xmllint --nocdata --xpath 'VM/USER_TEMPLATE/TPM_STATE/text()' "$DEP_FILE_LOCATION/vm.xml" \
+            | base64 -d | tar zxf - -C "$DEP_FILE_LOCATION";
+    } 2> /dev/null || true
+fi
+
+# If there's a saved TPM, copy it to libvirt's directory
+if [ -d "$DEP_FILE_LOCATION/tpm" ]; then
+    DOM_UUID=$(xmllint --xpath '/domain/uuid/text()' "$DEP_FILE")
+    (sudo -l | grep -q vtpm_setup) && sudo /var/tmp/one/vtpm_setup recover "$DOM_UUID" "$DEP_FILE_LOCATION"
+fi
+
 
 DATA=`virsh --connect $LIBVIRT_URI create $DEP_FILE`
 

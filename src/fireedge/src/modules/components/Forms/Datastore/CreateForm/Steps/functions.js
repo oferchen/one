@@ -73,6 +73,17 @@ function isRsync(type) {
 
 /**
  * @param {string} type - Datastore type
+ * @returns {boolean} - True if type is rsync
+ */
+function isNetapp(type) {
+  return [
+    DS_STORAGE_BACKENDS.NETAPP_IMG.value,
+    DS_STORAGE_BACKENDS.NETAPP_SYS.value,
+  ]?.includes(type)
+}
+
+/**
+ * @param {string} type - Datastore type
  * @returns {boolean} - True if type is custom
  */
 function isCustom(type) {
@@ -96,6 +107,7 @@ export {
   isRaw,
   isRestic,
   isRsync,
+  isNetapp,
   isCustom,
   typeIsOneOf,
 }

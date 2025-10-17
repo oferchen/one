@@ -1428,7 +1428,7 @@ CommandParser::CmdParser.new(ARGV) do
 
         The full list of configuration attributes are:
 
-        OS        = ["ARCH", "MACHINE", "KERNEL", "INITRD", "BOOTLOADER", "BOOT", "KERNEL_CMD", "ROOT", "SD_DISK_BUS", "UUID", "FIRMWARE"]
+        OS        = ["ARCH", "MACHINE", "KERNEL", "INITRD", "BOOTLOADER", "BOOT", "KERNEL_CMD", "ROOT", "SD_DISK_BUS", "UUID", "FIRMWARE", "FIRMWARE_FORMAT"]
         FEATURES  = ["ACPI", "PAE", "APIC", "LOCALTIME", "HYPERV", "GUEST_AGENT", "VIRTIO_SCSI_QUEUES", "VIRTIO_BLK_QUEUES", "IOTHREADS"]
         INPUT     = ["TYPE", "BUS"]
         GRAPHICS  = ["TYPE", "LISTEN", "PASSWD", "KEYMAP", "COMMAND"]
@@ -1685,7 +1685,7 @@ CommandParser::CmdParser.new(ARGV) do
         You can specify the PCI device with --pci (short_address) or
         --pci_device (device ID), --pci_class (class ID) and/or --pci_vendor (vendor ID).
 
-        States: POWEROFF
+        States: POWEROFF, UNDEPLOYED
     EOT
 
     command :"pci-attach", pci_attach_desc, :vmid,
@@ -1730,7 +1730,7 @@ CommandParser::CmdParser.new(ARGV) do
     pci_detach_desc = <<-EOT.unindent
         Detaches a PCI device from a VM
 
-        States: POWEROFF
+        States: POWEROFF, UNDEPLOYED
     EOT
 
     command :"pci-detach", pci_detach_desc, :vmid, :pciid do

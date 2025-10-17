@@ -22,6 +22,7 @@ import {
   CEPH_FIELDS,
   RESTIC_FIELDS,
   RSYNC_FIELDS,
+  NETAPP_FIELDS,
 } from './Fields'
 import { isCustom, typeIsOneOf } from '../functions'
 
@@ -36,6 +37,7 @@ const COMPATIBLE_SYSTEM_DATASTORES = {
     .notRequired()
     .default(() => undefined),
   fieldProps: {
+    preserveState: true,
     initialState: {
       filters: [{ id: 'type', value: 'SYSTEM_DS' }],
     },
@@ -56,6 +58,7 @@ export const FIELDS = [
   ...CEPH_FIELDS,
   ...RESTIC_FIELDS,
   ...RSYNC_FIELDS,
+  ...NETAPP_FIELDS,
   COMPATIBLE_SYSTEM_DATASTORES,
 ]
 

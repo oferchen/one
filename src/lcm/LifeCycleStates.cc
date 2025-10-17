@@ -893,6 +893,17 @@ void LifeCycleManager::trigger_prolog_failure(int vid)
                 vm->log("LCM", Log::ERROR, "prolog_failure_action, VM in a wrong state");
                 break;
         }
+
+        int plan_id   = vm->plan_id();
+        int action_id = vm->action_id();
+
+        vm.reset();
+
+        if (plan_id >= -1)
+        {
+            auto planm = Nebula::instance().get_planm();
+            planm->action_success(plan_id, action_id);
+        }
     });
 }
 
@@ -2784,6 +2795,7 @@ void LifeCycleManager::trigger_disk_restore_success(int vid)
                 }
 
                 vm->set_state(VirtualMachine::POWEROFF);
+                vm->set_state(VirtualMachine::LCM_INIT);
                 vm->log("LCM", Log::INFO, "VM restore operation completed.");
             }
             else
@@ -2822,6 +2834,7 @@ void LifeCycleManager::trigger_disk_restore_failure(int vid)
             if (lcm_state == VirtualMachine::RESTORE)
             {
                 vm->set_state(VirtualMachine::POWEROFF);
+                vm->set_state(VirtualMachine::LCM_INIT);
                 vm->log("LCM", Log::INFO, "VM restore operation fails");
             }
             else

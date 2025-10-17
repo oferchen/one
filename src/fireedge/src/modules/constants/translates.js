@@ -243,6 +243,7 @@ module.exports = {
   ShowBelongingUser: 'Show all owned by the user',
   ShowBelongingUserAndGroups: 'Show all owned by the user or his groups',
   SignIn: 'Sign In Now',
+  SignInRemote: 'Sign In with SAML service',
   SignOut: 'Sign Out',
   SnapshotCreate: 'Snapshot create',
   SnapshotRevert: 'Snapshot revert',
@@ -786,6 +787,7 @@ module.exports = {
   FilesystemSSH: 'Filesystem - local-SSH mode',
   Ceph: 'Ceph',
   LVM: 'LVM',
+  NETAPP: 'NetApp',
   RawDeviceMapping: 'Raw device mapping',
   StorageRestic: 'Backup - Restic',
   StorageRsync: 'Backup - RSync',
@@ -848,6 +850,17 @@ module.exports = {
     'Compress backups in the datastore, it needs a Restic repository with format version 2',
   RsyncHost: 'Rsync host',
   RsyncUser: 'Rsync user',
+  NetappHost: 'NetApp host',
+  NetappUser: 'NetApp user',
+  NetappPass: 'NetApp password',
+  NetappSVM: 'NetApp SVM',
+  NetappAgg: 'NetApp aggregates',
+  NetappIgroup: 'NetApp igroup',
+  NetappTarget: 'NetApp target',
+  NetappSuffix: 'NetApp suffix',
+  NetappGrowThresh: 'NetApp grow threshold',
+  NetappGrowRatio: 'NetApp grow ratio',
+  NetappSnapshotReserve: 'NetApp snapshot reserve',
   VolumeGroupName: 'Volume group name',
   GlusterHost: 'Gluster host',
   LoadBalanceWeights: 'Load Balance Weights',
@@ -1059,7 +1072,7 @@ module.exports = {
   Capacity: 'Capacity',
   CostPerHour: 'Cost / Hour',
   PhysicalCpu: 'Physical CPU',
-  PhysicalCpuWithPercent: 'Physical CPU (%)',
+  PhysicalCpuWithPercent: 'Physical CPU',
   VirtualCpu: 'Virtual CPU',
   VirtualCpuWithDecimal: 'Virtual CPU',
   VirtualCores: 'Virtual Cores',
@@ -1134,8 +1147,9 @@ module.exports = {
     'Check if you want to specify a short address of a PCI device',
   ShortAddress: 'Short address',
   NicPciWarning:
-    ' PCI passthrough of network devices is configured per NIC, in the "Network" tab. Do not add network devices here.',
-  PciAttachWarning: 'PCI only can be attach or detach in POWEROFF state.',
+    'PCI passthrough of network devices is configured per NIC, in the "Network" tab. Do not add network devices here.',
+  PciAttachWarning:
+    'PCI devices can only be attached or detached in the POWEROFF state.',
   /* VM schema - Pci */
   Pci: 'PCI',
   /* VM schema - snapshot */
@@ -1265,8 +1279,9 @@ module.exports = {
   MemoryConceptUnit: 'Choose unit of memory',
   MemoryConceptUserInput: '(This value is represented in MB)',
   CpuConcept: `
-    Percentage of CPU divided by 100 required for the
-    Virtual Machine. Half a processor is written 0.5`,
+    Defines the relative share of CPU time assigned to this VM.
+    A higher value gives the VM more processing power compared to others on the same host.
+    `,
   MaxVirtualCpu: 'Max Virtual CPU',
   MaxVirtualCpuConcept: `
     This value sets the maximum value of the VCPU allowed to be modified
@@ -1360,7 +1375,13 @@ module.exports = {
   UniqueIdOfTheVmConcept: `
     It's referenced as machine ID inside the VM.
     Could be used to force ID for licensing purposes`,
+  TPM: 'TPM',
+  TPMConcept:
+    'This attribute can be used to add a vTPM to the KVM machine. When doing so, every VM instance will also spawn a companion TPM emulator process (swtpm) in charge of emulating a physical TPM device for its VM.',
   Firmware: 'Firmware',
+  FirmwareFormat: 'Firmware format',
+  FirmwareFormatConcept:
+    'This attribute can be used to define the format of the UEFI NVRAM image. The NVRAM file will be automatically converted to the specified format if the source file differs.',
   FirmwareConcept:
     'This attribute allows to define the type of firmware used to boot the VM',
   FirmwareSecure: 'Firmware secure',
@@ -1791,9 +1812,9 @@ module.exports = {
   PhysicalDevice: 'Physical device',
   PhysicalDeviceConcept:
     'Device name of the physical network card in the host to route traffic to. Example: eth0',
-  PhysicalDeviceSwitch: 'Use only private host networking',
+  PhysicalDeviceSwitch: 'Use private host networking or a user-defined bridge',
   PhysicalDeviceSwitchConcept:
-    'If enabled, the Virtual Network will not connect to any physical device and hence the Virtual Machines will be able to communicate only with other Virtual Machines in the same virtual network and in the same host.',
+    "If enabled, OpenNebula won't assign any physical interface to the bridge. If the bridge is OpenNebula managed, by default it will only allow local host communication.",
   VLANTagged: 'Specify a range of VLANs that are allowed for the VM traffic',
   VLANTaggedConcept:
     'Type a VLAN ID (e.g. 100) or a VLAN range (e.g. 101-104) and press ENTER',
@@ -1897,6 +1918,7 @@ module.exports = {
   RealMemory: 'Real Memory',
   RealCpu: 'Real CPU',
   Cpu: 'CPU',
+  Gpu: 'GPU',
   CpuHost: 'Host CPU',
 
   Overcommitment: 'Overcommitment',
@@ -1907,6 +1929,9 @@ module.exports = {
   CpuUsage: 'CPU Usage',
   FreeMemory: 'Free Memory',
   UsedMemory: 'Used memory',
+  Wattage: 'Wattage',
+  PowerDraw: 'Power draw',
+
   TemplateToIsolateCpus:
     'Comma separated list of CPU IDs that will be isolated from the NUMA scheduler',
 
@@ -2076,6 +2101,13 @@ module.exports = {
     If set, it will overwrite the default device mapping`,
   BusAdapterController: 'Bus adapter controller',
   Cache: 'Cache',
+  EnableDistributedCache: 'Enable the distributed cache',
+  CachePath: 'Absolute directory where cached images will be stored.',
+  CacheMaxSize:
+    'Maximum percentage of disk (cache path), to be allocated for caching.',
+  CacheUpstreams:
+    "List of one or more central cache hostnames or IPs (e.g., 'hostname0,hostname1'). Leave empty to disable central caches.",
+  CacheMinAge: 'Minimum age before a cached image can be evicted.',
   IoPolicy: 'IO Policy',
   Discard: 'Discard',
   IopsSize: 'Size of IOPS per second',
@@ -2448,6 +2480,7 @@ module.exports = {
   SuccessClusterCreated: 'Cluster created - #%s',
   SuccessClusterUpdated: 'Cluster updated - #%s',
   SuccessDatastoreCreated: 'Datastore created - #%s',
+  SuccessDatastoreUpdated: 'Datastore updated - #%s',
   SuccessFileCreated: 'File created - #%s',
   SuccessGroupCreated: 'Group created - #%s',
   SuccessGroupUpdated: 'Group updated - #%s',

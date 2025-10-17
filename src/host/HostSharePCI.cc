@@ -200,7 +200,7 @@ void HostSharePCI::pci_attribute(VectorAttribute *device, PCIDevice *pci,
                                  bool set_prev, const std::string& vprofile)
 {
     static vector<string> cp_attr = {"DOMAIN", "BUS", "SLOT", "FUNCTION", "ADDRESS",
-                                     "SHORT_ADDRESS"};
+                                     "SHORT_ADDRESS", "VENDOR", "DEVICE", "CLASS"};
 
     static vector<string> cp_check_attr = {"NUMA_NODE", "UUID", "MDEV_MODE"};
 
@@ -250,7 +250,12 @@ void HostSharePCI::pci_attribute(VectorAttribute *device, PCIDevice *pci,
         // NVIDIA Corporation && 3D controller
         if ((vendor_id == 0x10de) && (class_id == 0x0302))
         {
-            device->replace("PROFILE", vprofile);
+            const std::string& dev_profile = device->vector_value("PROFILE");
+
+            if (dev_profile.empty())
+            {
+                device->replace("PROFILE", vprofile);
+            }
         }
     }
 }
@@ -560,8 +565,16 @@ void HostSharePCI::set_monitorization(Template& ht, const HostShareConf& hconf)
         if (pci_it != pci_devices.end())
         {
             missing.erase(address);
-            delete pci;
 
+            const auto& stored_profiles    = pci_it->second->attrs->vector_value("PROFILES");
+            const auto& monitored_profiles = pci->vector_value("PROFILES");
+
+            if (monitored_profiles != stored_profiles)
+            {
+                pci_it->second->attrs->replace("PROFILES", monitored_profiles);
+            }
+
+            delete pci;
             continue;
         }
 

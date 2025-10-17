@@ -57,6 +57,29 @@ const UpdateConfigurationForm = createForm(SCHEMA, undefined, {
       }
     }
 
+    if (template.CPU_MODEL) {
+      knownTemplate.CPU_MODEL = { ...template.CPU_MODEL }
+    }
+
+    if (template.OS) {
+      // Clone template.OS to ensure its mutable
+      knownTemplate.OS = { ...template.OS }
+    }
+
+    if (template.RAW) {
+      // Clone template.RAW to ensure its mutable
+      knownTemplate.RAW = { ...template.RAW }
+
+      if (template.RAW.DATA) {
+        // DATA exists, so we add TYPE and transform DATA
+        knownTemplate.RAW.TYPE = template.HYPERVISOR
+        knownTemplate.RAW.DATA = template.RAW.DATA
+      } else {
+        // DATA doesn't exist, remove RAW from template
+        delete knownTemplate.RAW
+      }
+    }
+
     // Easy compatibility with the bootOrder component by specifying the same form paths as in the VM Template
     !!bootOrder && set(knownTemplate, 'extra.OS.BOOT', bootOrder)
     !!template?.DISK &&

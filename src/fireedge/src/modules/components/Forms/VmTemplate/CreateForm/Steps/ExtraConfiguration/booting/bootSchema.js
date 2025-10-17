@@ -18,6 +18,8 @@ import { boolean, string } from 'yup'
 import {
   CPU_ARCHITECTURES,
   FIRMWARE_TYPES,
+  FIRMWARE_FORMAT_TYPES,
+  VTPM_TYPES,
   HYPERVISORS,
   INPUT_TYPES,
   SD_DISK_BUSES,
@@ -149,6 +151,38 @@ export const FIRMWARE = {
   grid: { md: 8 },
 }
 
+export const FIRMWARE_FORMAT = {
+  name: 'OS.FIRMWARE_FORMAT',
+  label: T.FirmwareFormat,
+  tooltip: T.FirmwareFormatConcept,
+  notOnHypervisors: [lxc],
+  type: INPUT_TYPES.AUTOCOMPLETE,
+  optionsOnly: true,
+  validation: string()
+    .trim()
+    .notRequired()
+    .default(() => undefined),
+  dependOf: ['HYPERVISOR', '$general.HYPERVISOR'],
+  values: arrayToOptions(FIRMWARE_FORMAT_TYPES),
+  grid: { md: 6 },
+}
+
+export const TPM_MODEL = {
+  name: 'TPM.MODEL',
+  label: T.TPM,
+  tooltip: T.TPMConcept,
+  notOnHypervisors: [lxc],
+  type: INPUT_TYPES.AUTOCOMPLETE,
+  optionsOnly: true,
+  validation: string()
+    .trim()
+    .notRequired()
+    .default(() => undefined),
+  dependOf: ['HYPERVISOR', '$general.HYPERVISOR'],
+  values: arrayToOptions(VTPM_TYPES),
+  grid: { md: 6 },
+}
+
 /** @type {Field} Firmware secure field  */
 export const FIRMWARE_SECURE = {
   name: 'OS.FIRMWARE_SECURE',
@@ -167,6 +201,8 @@ export const BOOT_FIELDS = [
   ROOT_DEVICE,
   FIRMWARE,
   FIRMWARE_SECURE,
+  FIRMWARE_FORMAT,
+  TPM_MODEL,
   KERNEL_CMD,
   BOOTLOADER,
   UUID,

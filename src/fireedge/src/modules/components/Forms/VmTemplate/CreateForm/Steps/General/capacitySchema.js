@@ -21,6 +21,7 @@ import {
   MEMORY_RESIZE_OPTIONS,
   T,
   UNITS,
+  MAXIMUM_CPU_SHARES,
   VmTemplateFeatures,
 } from '@ConstantsModule'
 import { formatNumberByCurrency } from '@ModelsModule'
@@ -122,7 +123,10 @@ export const PHYSICAL_CPU = generateCapacityInput({
   name: 'CPU',
   label: T.PhysicalCpuWithPercent,
   tooltip: T.CpuConcept,
-  validation: commonValidation.required(),
+  validation: number()
+    .positive()
+    .max(MAXIMUM_CPU_SHARES)
+    .default(() => undefined),
 })
 
 /** @type {Field[]} Modification inputs on CPU field */
@@ -227,7 +231,7 @@ export const DISK_COST = generateCostCapacityInput({
     step: 0.1,
     inputProps: {
       setValueAs: (v) => (v === '' ? undefined : Number(v)),
-      'data-cy': 'general-showback-DISK_COST',
+      'data-cy': 'general-showback-DISK_COST', // Overwrites auto generated data cy
     },
     helperText: <HelperDiskCost />,
   }),

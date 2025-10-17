@@ -93,24 +93,30 @@ string Request::object_name(PoolObjectSQL::ObjectType ob)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-static void get_client_ip(const xmlrpc_c::callInfo * call_info, char * const
-                          ip, char * const port)
+static void get_client_ip(char * const ip, char * const port)
 {
-    struct abyss_unix_chaninfo * unix_ci;
+    // 1. Get the socket id and prepare the address structure
+    auto client_fd = Nebula::instance().get_rm()->get_socket();
 
-    const xmlrpc_c::callInfo_serverAbyss * abyss_ci =
-            static_cast<const xmlrpc_c::callInfo_serverAbyss *>(call_info);
+    struct sockaddr_storage addr_storage;
+    socklen_t               addr_len = sizeof(addr_storage);
 
-    SessionGetChannelInfo(abyss_ci->abyssSessionP, (void **) &unix_ci);
+    // 2. This fills addr_storage with the remote address information.
+    if ( getpeername(client_fd, (struct sockaddr*)&addr_storage, &addr_len) != 0 )
+    {
+        ip[0] = '-';
+        ip[1] = '\0';
 
-    // -------------------------------------------------------------------------
-    // NOTE: This only works for IPv4 as abyss_unix_chaninfo is not IPv6 ready
-    // it should use sockaddr_storage for peerAddr, and set peerAddrLen properly
-    // This could be bypassed with getpeername if library exposes access to
-    // channel implementation, i.e. socket fd
-    // -------------------------------------------------------------------------
+        port[0] = '-';
+        port[1] = '\0';
 
-    int rc = getnameinfo(&(unix_ci->peerAddr), unix_ci->peerAddrLen, ip,
+        return;
+    }
+
+    // 3. Read the IP and Port from addr_storage
+    int rc = getnameinfo((struct sockaddr*)&addr_storage,
+                         addr_len,
+                         ip,
                          NI_MAXHOST, port, NI_MAXSERV, NI_NUMERICHOST|NI_NUMERICSERV);
 
     if ( rc != 0 )
@@ -223,7 +229,7 @@ void Request::log_method_invoked(const RequestAttributes& att,
                 case 'A':
                     if ( ip[0] == '\0' )
                     {
-                        get_client_ip(call_info, ip, port);
+                        get_client_ip(ip, port);
                     }
 
                     oss << ip;
@@ -232,7 +238,7 @@ void Request::log_method_invoked(const RequestAttributes& att,
                 case 'P':
                     if ( port[0] == '\0' )
                     {
-                        get_client_ip(call_info, ip, port);
+                        get_client_ip(ip, port);
                     }
 
                     oss << port;
@@ -544,6 +550,7 @@ Request::ErrorCode Request::basic_authorization(
 
 bool Request::user_quota_authorization (Template * tmpl,
                                         Quotas::QuotaType  qtype,
+                                        bool resize,
                                         const RequestAttributes& att,
                                         string& error_str)
 {
@@ -562,7 +569,14 @@ bool Request::user_quota_authorization (Template * tmpl,
 
     DefaultQuotas default_user_quotas = nd.get_default_user_quota();
 
-    rc = user->quota.quota_check(qtype, tmpl, default_user_quotas, error_str);
+    if (resize)
+    {
+        rc = user->quota.quota_update(qtype, tmpl, default_user_quotas, error_str);
+    }
+    else
+    {
+        rc = user->quota.quota_check(qtype, tmpl, default_user_quotas, error_str);
+    }
 
     if (rc == true)
     {
@@ -585,6 +599,7 @@ bool Request::user_quota_authorization (Template * tmpl,
 
 bool Request::group_quota_authorization (Template * tmpl,
                                          Quotas::QuotaType  qtype,
+                                         bool resize,
                                          const RequestAttributes& att,
                                          string& error_str)
 {
@@ -603,7 +618,14 @@ bool Request::group_quota_authorization (Template * tmpl,
 
     DefaultQuotas default_group_quotas = nd.get_default_group_quota();
 
-    rc = group->quota.quota_check(qtype, tmpl, default_group_quotas, error_str);
+    if (resize)
+    {
+        rc = group->quota.quota_update(qtype, tmpl, default_group_quotas, error_str);
+    }
+    else
+    {
+        rc = group->quota.quota_check(qtype, tmpl, default_group_quotas, error_str);
+    }
 
     if (rc == true)
     {
@@ -680,7 +702,8 @@ bool Request::quota_authorization(
         Template *          tmpl,
         Quotas::QuotaType   qtype,
         const RequestAttributes&  att,
-        string&             error_str)
+        string&             error_str,
+        bool                resize)
 {
     // uid/gid == -1 means do not update user/group
 
@@ -689,7 +712,7 @@ bool Request::quota_authorization(
 
     if ( do_user_quota )
     {
-        if ( user_quota_authorization(tmpl, qtype, att, error_str) == false )
+        if ( user_quota_authorization(tmpl, qtype, resize, att, error_str) == false )
         {
             return false;
         }
@@ -697,7 +720,7 @@ bool Request::quota_authorization(
 
     if ( do_group_quota )
     {
-        if ( group_quota_authorization(tmpl, qtype, att, error_str) == false )
+        if ( group_quota_authorization(tmpl, qtype, resize, att, error_str) == false )
         {
             if ( do_user_quota )
             {

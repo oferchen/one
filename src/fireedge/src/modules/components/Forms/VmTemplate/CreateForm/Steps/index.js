@@ -100,12 +100,16 @@ const Steps = createSteps([General, ExtraConfiguration, CustomVariables], {
     const schedRequirements = vmTemplate?.TEMPLATE?.SCHED_REQUIREMENTS
     if (schedRequirements) {
       objectSchema[EXTRA_ID].SCHED_REQUIREMENTS = schedRequirements
-      const parts = schedRequirements?.split(' | ')
+      const parts = schedRequirements
+        ?.split('&')
+        ?.flatMap((part) => part.split('|'))
+        ?.map((part) => part?.trim())
+
       const tableIds = parts?.reduce((ids, part) => {
         if (part?.includes('ID')) {
           const isCluster = part.toUpperCase().includes(T.Cluster.toUpperCase())
           const tableId = isCluster ? T.Cluster : T.Host
-          const partId = part?.split(' = ')?.at(-1)?.trim()
+          const partId = [].concat(part?.match(/\d+/g))?.flat()?.pop()
           if (!partId) return ids
           ;(ids[tableId] ??= []).push(partId)
         }
@@ -132,16 +136,24 @@ const Steps = createSteps([General, ExtraConfiguration, CustomVariables], {
       context: { ...vmTemplate, [EXTRA_ID]: vmTemplate.TEMPLATE },
     })
 
+    // Second knownTemplate but with Attributes that will be Custom Variables
+    const knownTemplateWithUnknown = schema.cast(objectSchema, {
+      stripUnknown: true,
+      context: { ...vmTemplate, [EXTRA_ID]: vmTemplate.TEMPLATE },
+    })
+
     const knownAttributes = {
-      ...knownTemplate[GENERAL_ID],
-      ...knownTemplate[EXTRA_ID],
+      ...knownTemplateWithUnknown[GENERAL_ID],
+      ...knownTemplateWithUnknown[EXTRA_ID],
     }
 
     // Set the unknown attributes to the custom variables section
-    knownTemplate[CUSTOM_ID] = getUnknownAttributes(
+    const unkownAttributes = getUnknownAttributes(
       vmTemplate?.TEMPLATE,
       knownAttributes
     )
+
+    knownTemplate[CUSTOM_ID] = unkownAttributes
 
     // Get the custom vars from the context
     const knownContext = reach(schema, `${EXTRA_ID}.CONTEXT`).cast(
@@ -163,9 +175,7 @@ const Steps = createSteps([General, ExtraConfiguration, CustomVariables], {
 
     return knownTemplate
   },
-  transformBeforeSubmit: (formData) =>
-    // All formatting and parsing is taken care of in the VmTemplate container
-    formData,
+  transformBeforeSubmit: (formData) => formData,
 })
 
 export default Steps

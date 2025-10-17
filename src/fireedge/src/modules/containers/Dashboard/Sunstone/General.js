@@ -21,7 +21,7 @@ import {
   ModernTv as VmsIcons,
 } from 'iconoir-react'
 import PropTypes from 'prop-types'
-import { ReactElement, memo, useMemo, useEffect } from 'react'
+import { ReactElement, memo, useEffect, useMemo } from 'react'
 import { useHistory } from 'react-router-dom'
 
 import {
@@ -30,8 +30,8 @@ import {
   VmTemplateAPI,
   VnAPI,
   useAuth,
-  useViews,
   useGeneralApi,
+  useViews,
 } from '@FeaturesModule'
 
 import {
@@ -55,9 +55,9 @@ export default function SunstoneDashboard({ view }) {
   const { DISABLE_ANIMATIONS } = fireedge
   const { hasAccessToResource } = useViews()
 
-  // Empty subsection in breadcrumb
-  const { setBreadcrumb } = useGeneralApi()
-  useEffect(() => setBreadcrumb({}), [])
+  // Delete second title
+  const { setSecondTitle } = useGeneralApi()
+  useEffect(() => setSecondTitle({}), [])
 
   const { push: goTo } = useHistory()
 
@@ -122,7 +122,7 @@ export default function SunstoneDashboard({ view }) {
 SunstoneDashboard.displayName = 'SunstoneDashboard'
 
 SunstoneDashboard.propTypes = {
-  view: PropTypes.object,
+  view: PropTypes.string,
 }
 
 const ResourceWidget = memo(
@@ -171,5 +171,5 @@ ResourceWidget.propTypes = {
   text: PropTypes.string,
   bgColor: PropTypes.string,
   icon: PropTypes.any,
-  disableAnimations: PropTypes.bool,
+  disableAnimations: PropTypes.string,
 }

@@ -2267,7 +2267,10 @@ int DispatchManager::disk_resize(int vid, int did, long long new_size,
         default: break;
     }
 
-    close_cp_history(vmpool, vm.get(), VMActions::DISK_RESIZE_ACTION, ra);
+    if (state != VirtualMachine::UNDEPLOYED)
+    {
+        close_cp_history(vmpool, vm.get(), VMActions::DISK_RESIZE_ACTION, ra);
+    }
 
     vmpool->update(vm.get());
 
@@ -2821,16 +2824,20 @@ int DispatchManager::resize(int vid, float cpu, int vcpu, long memory, bool enfo
     }
 
     int rc;
+    bool update_history = true;
 
     switch (vm->get_state())
     {
-        case VirtualMachine::POWEROFF: //Only check host capacity in POWEROFF
         case VirtualMachine::INIT:
         case VirtualMachine::PENDING:
         case VirtualMachine::HOLD:
         case VirtualMachine::UNDEPLOYED:
         case VirtualMachine::CLONING:
         case VirtualMachine::CLONING_FAILURE:
+            update_history = false;
+            [[fallthrough]];
+
+        case VirtualMachine::POWEROFF: //Only check host capacity in POWEROFF
             rc = test_set_capacity(vm.get(), cpu, memory, vcpu, enforce, error_str);
             break;
 
@@ -2898,7 +2905,7 @@ int DispatchManager::resize(int vid, float cpu, int vcpu, long memory, bool enfo
 
     if (rc == 0)
     {
-        if (vm->hasHistory())
+        if (vm->hasHistory() && update_history)
         {
             close_cp_history(vmpool, vm.get(), VMActions::RESIZE_ACTION, ra);
         }
@@ -2945,7 +2952,7 @@ int DispatchManager::attach_pci(int vid, VectorAttribute * pci,
 
     unique_ptr<Host> host;
 
-    if (vm->get_state() ==  VirtualMachine::POWEROFF)
+    if (vm->get_state() == VirtualMachine::POWEROFF)
     {
         HostShareCapacity sr;
 
@@ -2977,7 +2984,10 @@ int DispatchManager::attach_pci(int vid, VectorAttribute * pci,
         hpool->update(host.get());
     }
 
-    close_cp_history(vmpool, vm.get(), VMActions::PCI_ATTACH_ACTION, ra);
+    if (vm->get_state() != VirtualMachine::UNDEPLOYED)
+    {
+        close_cp_history(vmpool, vm.get(), VMActions::PCI_ATTACH_ACTION, ra);
+    }
 
     vm->log("DiM", Log::INFO, "PCI device successfully attached.");
 
@@ -3046,9 +3056,19 @@ int DispatchManager::detach_pci(int vid, int pci_id, const RequestAttributes& ra
         hpool->update(host.get());
     }
 
+    int uid = vm->get_uid();
+    int gid = vm->get_gid();
+
+    Template quota_tmpl;
+    quota_tmpl.add("CLUSTER_ID", vm->get_cid());
+    quota_tmpl.add("PCI_DEV", 1);
+
     vm->detach_pci(vpci);
 
-    close_cp_history(vmpool, vm.get(), VMActions::PCI_DETACH_ACTION, ra);
+    if (vm->get_state() != VirtualMachine::UNDEPLOYED)
+    {
+        close_cp_history(vmpool, vm.get(), VMActions::PCI_DETACH_ACTION, ra);
+    }
 
     vm->log("DiM", Log::INFO, "PCI device successfully deatached.");
 
@@ -3059,6 +3079,8 @@ int DispatchManager::detach_pci(int vid, int pci_id, const RequestAttributes& ra
     vmpool->update_history(vm.get());
 
     vmpool->update(vm.get());
+
+    Quotas::quota_del(Quotas::VM, uid, gid, &quota_tmpl);
 
     return 0;
 }

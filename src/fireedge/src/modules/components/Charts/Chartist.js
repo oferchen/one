@@ -119,12 +119,12 @@ const createFill = (u, color) => {
   const ctx = u.ctx
   const plotHeight = u.bbox?.height || u.over.clientHeight
   const gradient = ctx.createLinearGradient(0, 0, 0, plotHeight)
-  gradient.addColorStop(0.1163, color || '#40B3D9')
-  gradient.addColorStop(
-    0.8837,
 
-    (color || '#40B3D9') + '00'
-  )
+  const baseColor = color || '#40B3D9'
+
+  gradient.addColorStop(0, `${baseColor}A8`)
+  gradient.addColorStop(0.71, `${baseColor}54`)
+  gradient.addColorStop(1, `${baseColor}00`)
 
   return gradient
 }
@@ -144,6 +144,8 @@ const sortingOptions = {
  * @param {string} props.name - Chartist name
  * @param {Array} props.x - Chartist X
  * @param {Array|string} props.y - Chartist Y
+ * @param {number} props.yRangeOffset - Adds a tiny offset to the y Range so the graph renders properly. This can be customized based on the nature of the data. For percentages 100 can be used instead for example.
+ * @param {number} props.xRangeOffset - Adds a tiny offset to the x Range so the graph renders properly.
  * @param {Function} props.interpolationY - Chartist interpolation Y
  * @param {boolean} props.shouldFill - Display line shadows/gradients
  * @param {Array} props.legendNames - List of legend names
@@ -163,6 +165,8 @@ const Chartist = ({
   name = '',
   x = '',
   y = '',
+  yRangeOffset = 0.000001,
+  xRangeOffset = 0.000001,
   zoomFactor = 0.95,
   interpolationY = (value) => value,
   shouldFill = [],
@@ -308,9 +312,14 @@ const Chartist = ({
       const PRangeY = (YMax - YMin) / 2
       const YPadding = Math.abs(PRangeY * 0.05) ?? 0
 
+      const upperYRange = YMax + YPadding
+
       return [
         transformedYValues,
-        [+YMin === 0 ? YMin : YMin - YPadding, YMax + YPadding + 0.000001], // Adding a tiny buffer for the max so we dont get a range of exact 0
+        [
+          +YMin === 0 ? YMin : YMin - YPadding,
+          upperYRange <= 0 ? upperYRange + yRangeOffset : upperYRange,
+        ], // Adding a tiny buffer for the max so we dont get a range of exact 0
       ]
     }
 
@@ -327,10 +336,12 @@ const Chartist = ({
     const PRangeX = (XMax - XMin) / 2
     const XPadding = Math.abs(PRangeX * 0.01) ?? 0
 
+    const upperXRange = XMax + XPadding
+
     const XRange = [
       +XMin === 0 ? XMin : XMin - XPadding,
-      XMax + XPadding + 0.000001,
-    ] // Adding a tiny buffer for the max so we dont get a range of exact 0
+      upperXRange <= 0 ? upperXRange + xRangeOffset : upperXRange,
+    ] // Adding a tiny offset for the max so we dont get a range of exact 0
 
     return {
       YRender: renderableY,
@@ -503,13 +514,12 @@ const Chartist = ({
             <Typography
               sx={{
                 fontFamily: 'Ubuntu',
-                fontSize: '1.313rem',
+                fontSize: 'clamp(0.75rem, 2vw, 1.313rem)',
                 lineHeight: '1.313rem',
                 fontStyle: 'normal',
                 fontWeight: 400,
                 flex: 1,
               }}
-              noWrap
             >
               {name}
             </Typography>
@@ -618,6 +628,8 @@ Chartist.propTypes = {
     PropTypes.arrayOf(PropTypes.string),
     PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
   ]),
+  yRangeOffset: PropTypes.number,
+  xRangeOffset: PropTypes.number,
   interpolationY: PropTypes.func,
   shouldFill: PropTypes.array,
   enableLegend: PropTypes.bool,

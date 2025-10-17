@@ -65,6 +65,7 @@ export const DATASTORE_STATES = [
 /** @enum {string} Datastore actions */
 export const DATASTORE_ACTIONS = {
   CREATE_DIALOG: 'create_dialog',
+  UPDATE_DIALOG: 'update_dialog',
   DELETE: 'delete',
   EDIT_LABELS: 'edit_labels',
 
@@ -91,12 +92,14 @@ export const DATASTORE_OPTIONS = {
   DEVICES: { name: T.Devices, value: 'dev' },
   RESTIC: { name: T.StorageRestic, value: 'restic' },
   RSYNC: { name: T.StorageRsync, value: 'rsync' },
+  NETAPP: { name: T.NETAPP, value: 'netapp' },
   CUSTOM: { name: T.Custom, value: 'custom' },
 }
 
 export const TRANSFER_OPTIONS = {
   SHARED: { name: T.Shared, value: 'shared' },
   SSH: { name: T.SSH, value: 'ssh' },
+  NETAPP: { name: T.NETAPP, value: 'netapp' },
   FS_LVM: { name: T.FSLVM, value: 'fs_lvm_ssh' },
   CEPH: { name: T.Ceph, value: 'ceph' },
   DEVICES: { name: T.Devices, value: 'dev' },
@@ -111,6 +114,8 @@ export const DS_STORAGE_BACKENDS = {
   RAW: { name: T.RawDeviceMapping, value: 'dev-dev' },
   RESTIC: { name: T.StorageRestic, value: 'restic' },
   RSYNC: { name: T.StorageRsync, value: 'rsync' },
+  NETAPP_SYS: { name: T.NETAPP, value: 'netapp' },
+  NETAPP_IMG: { name: T.NETAPP, value: 'netapp-netapp' },
   CUSTOM: { name: T.Custom, value: 'custom' },
 }
 
@@ -129,6 +134,8 @@ export const DISK_TYPES_BY_STORAGE_BACKEND = {
   [DS_STORAGE_BACKENDS.RAW.value]: DS_DISK_TYPES.FILE,
   [DS_STORAGE_BACKENDS.RESTIC.value]: DS_DISK_TYPES.FILE,
   [DS_STORAGE_BACKENDS.RSYNC.value]: DS_DISK_TYPES.FILE,
+  [DS_STORAGE_BACKENDS.NETAPP_IMG.value]: DS_DISK_TYPES.BLOCK,
+  [DS_STORAGE_BACKENDS.NETAPP_SYS.value]: DS_DISK_TYPES.BLOCK,
 }
 
 export const DATASTORE_TYPES = {
@@ -143,6 +150,7 @@ export const DATASTORE_TYPES = {
       DS_STORAGE_BACKENDS.FS_LVM,
       DS_STORAGE_BACKENDS.RAW,
       DS_STORAGE_BACKENDS.CUSTOM,
+      DS_STORAGE_BACKENDS.NETAPP_IMG,
     ],
   },
   SYSTEM: {
@@ -155,6 +163,7 @@ export const DATASTORE_TYPES = {
       DS_STORAGE_BACKENDS.CEPH,
       DS_STORAGE_BACKENDS.FS_LVM,
       DS_STORAGE_BACKENDS.CUSTOM,
+      DS_STORAGE_BACKENDS.NETAPP_SYS,
     ],
   },
   FILE: {

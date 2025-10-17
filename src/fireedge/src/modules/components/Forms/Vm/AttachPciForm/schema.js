@@ -24,12 +24,13 @@ import {
 } from '@UtilsModule'
 import { T, INPUT_TYPES } from '@ConstantsModule'
 import { uniqWith } from 'lodash'
+import { useFormContext } from 'react-hook-form'
 
-const samePciDevice = (obj1, obj2) =>
-  obj1.VENDOR === obj2.VENDOR &&
-  obj1.DEVICE === obj2.DEVICE &&
-  obj1.CLASS === obj2.CLASS &&
-  obj1.SHORT_ADDRESS === obj2.SHORT_ADDRESS
+const samePciDevice = (a, b) =>
+  a &&
+  b &&
+  ['DEVICE', 'VENDOR', 'CLASS'].every((k) => a[k] === b[k]) &&
+  a.SHORT_ADDRESS?.split('.')[0] === b.SHORT_ADDRESS?.split('.')[0]
 
 /**
  * Transform a PCI device to String.
@@ -68,6 +69,7 @@ const SPECIFIC_DEVICE = {
 /** @type {Field} Name PCI device field */
 const NAME_FIELD = {
   name: 'PCI_DEVICE_NAME',
+
   label: T.DeviceName,
   type: INPUT_TYPES.AUTOCOMPLETE,
   optionsOnly: true,
@@ -79,6 +81,8 @@ const NAME_FIELD = {
 
     return arrayToOptions(uniqWith(pciDevices, samePciDevice), {
       getText: ({ DEVICE_NAME } = {}) => DEVICE_NAME,
+      addDescription: true,
+      getDescription: (opt) => opt?.TYPE,
       getValue: transformPciToString,
     })
   },
@@ -201,6 +205,47 @@ const SHORT_ADDRESS = {
   }),
 }
 
+/** @type {Field} Name PCI device field */
+const PROFILE_FIELD = {
+  name: 'PROFILE',
+  label: T.Profile,
+  type: INPUT_TYPES.AUTOCOMPLETE,
+  values: (dependencies = []) => {
+    const [selectedPciDevice] = dependencies
+    const { data = [] } = HostAPI.useGetHostsAdminQuery({
+      skip: selectedPciDevice === undefined,
+    })
+    if (selectedPciDevice && data) {
+      const pciDevices = data.map(getPciDevices).flat()
+      const [DEVICE, VENDOR, CLASS] = selectedPciDevice?.split(';')
+      const selectedDevice = pciDevices.find(
+        (device) =>
+          device?.DEVICE === DEVICE &&
+          device?.VENDOR === VENDOR &&
+          device?.CLASS === CLASS
+      )
+
+      const profiles = selectedDevice?.PROFILES?.split(',') || []
+
+      if (!profiles?.length) {
+        const { setValue } = useFormContext()
+        setValue(PROFILE_FIELD.name, '')
+      }
+
+      return arrayToOptions(profiles)
+    }
+
+    return arrayToOptions([])
+  },
+  dependOf: [NAME_FIELD.name, SPECIFIC_DEVICE.name],
+  htmlType: ([_, specificDevice] = []) => specificDevice && INPUT_TYPES.HIDDEN,
+  validation: string()
+    .trim()
+    .notRequired()
+    .default(() => ''),
+  grid: { md: 6 },
+}
+
 /**
  * @param {object} oneConfig - Config of oned.conf
  * @param {boolean} adminGroup - User is admin or not
@@ -215,6 +260,7 @@ export const PCI_FIELDS = (oneConfig, adminGroup) =>
       VENDOR_FIELD,
       CLASS_FIELD,
       SHORT_ADDRESS,
+      PROFILE_FIELD,
     ],
     'PCI',
     oneConfig,
@@ -229,4 +275,5 @@ export const PCI_SCHEMA = getObjectSchemaFromFields([
   VENDOR_FIELD,
   CLASS_FIELD,
   SHORT_ADDRESS,
+  PROFILE_FIELD,
 ])

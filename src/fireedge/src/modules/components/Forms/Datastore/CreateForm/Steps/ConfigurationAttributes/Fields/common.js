@@ -14,9 +14,11 @@
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
 import { DATASTORE_TYPES, INPUT_TYPES, T } from '@ConstantsModule'
-import { Field } from '@UtilsModule'
+import { InputAdornment } from '@mui/material'
+import { Field, arrayToOptions } from '@UtilsModule'
 import { array, boolean, number, string } from 'yup'
 import { isCeph, isLvm, isShared, isSsh, typeIsOneOf } from '../../functions'
+import { HostAPI } from '@FeaturesModule'
 
 /** @type {Field} - Options field */
 const RESTRICTED_DIRS = {
@@ -111,7 +113,7 @@ const NO_DECOMPRESS = {
   dependOf: '$general.STORAGE_BACKEND',
   htmlType: (type) =>
     !typeIsOneOf(type, [isShared, isSsh, isCeph, isLvm]) && INPUT_TYPES.HIDDEN,
-  grid: { xs: 12, md: 6 },
+  grid: { md: 6 },
 }
 
 /** @type {Field} - Check capacity field */
@@ -157,12 +159,11 @@ const QCOW2_STANDALONE = {
   tooltip: T.StandaloneQcow2CloneConcept,
   type: INPUT_TYPES.SWITCH,
   validation: boolean().yesOrNo(),
-  htmlType: (_, context) => {
-    const { general: { STORAGE_BACKEND, TYPE } = {} } =
-      context?.getValues() || {}
+  dependOf: ['$general.STORAGE_BACKEND', '$general.TYPE'],
+  htmlType: ([STORAGE_BACKEND, TYPE] = []) => {
     if (
-      !typeIsOneOf(STORAGE_BACKEND, [isShared]) &&
-      TYPE === DATASTORE_TYPES.IMAGE.value
+      !typeIsOneOf(STORAGE_BACKEND, [isShared]) ||
+      TYPE !== DATASTORE_TYPES?.IMAGE?.value
     ) {
       return INPUT_TYPES.HIDDEN
     }
@@ -272,6 +273,138 @@ const NFS_AUTO_OPTS = {
   grid: { xs: 12, md: 6 },
 }
 
+/* Distributed cache options */
+
+const CACHE_ENABLE = {
+  name: 'CACHE_ENABLE',
+  label: T.EnableDistributedCache,
+  type: INPUT_TYPES.SWITCH,
+  validation: boolean().yesOrNo(),
+  dependOf: ['$general.STORAGE_BACKEND', '$general.TYPE'],
+  htmlType: ([STORAGE_BACKEND, TYPE] = []) => {
+    if (
+      !typeIsOneOf(STORAGE_BACKEND, [isSsh]) ||
+      TYPE !== DATASTORE_TYPES?.IMAGE?.value
+    ) {
+      return INPUT_TYPES.HIDDEN
+    }
+  },
+  grid: { md: 6 },
+}
+
+const CACHE_PATH = {
+  name: 'CACHE_PATH',
+  label: T.CachePath,
+  type: INPUT_TYPES.TEXT,
+  validation: string()
+    .trim()
+    .notRequired()
+    .default(() => '/var/lib/one/cache'),
+  dependOf: ['$general.STORAGE_BACKEND', '$general.TYPE', CACHE_ENABLE.name],
+  htmlType: ([STORAGE_BACKEND, TYPE, CACHE_ENABLED = 'NO'] = []) => {
+    if (
+      !typeIsOneOf(STORAGE_BACKEND, [isSsh]) ||
+      TYPE !== DATASTORE_TYPES?.IMAGE?.value ||
+      CACHE_ENABLED !== true ||
+      CACHE_ENABLED === 'NO'
+    ) {
+      return INPUT_TYPES.HIDDEN
+    }
+  },
+  grid: { md: 6.125 },
+}
+
+const CACHE_MAX_SIZE = {
+  name: 'CACHE_MAX_SIZE',
+  label: T.CacheMaxSize,
+  type: INPUT_TYPES.SLIDER,
+  validation: number()
+    .positive()
+    .min(0)
+    .max(100)
+    .default(() => 10),
+  dependOf: ['$general.STORAGE_BACKEND', '$general.TYPE', CACHE_ENABLE.name],
+  htmlType: ([STORAGE_BACKEND, TYPE, CACHE_ENABLED = 'NO'] = []) => {
+    if (
+      !typeIsOneOf(STORAGE_BACKEND, [isSsh]) ||
+      TYPE !== DATASTORE_TYPES?.IMAGE?.value ||
+      CACHE_ENABLED !== true ||
+      CACHE_ENABLED === 'NO'
+    ) {
+      return INPUT_TYPES.HIDDEN
+    }
+  },
+  grid: { md: 12 },
+  fieldProps: {
+    min: 0,
+    max: 100,
+    step: 1,
+    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+  },
+}
+
+const CACHE_UPSTREAMS = {
+  name: 'CACHE_UPSTREAMS',
+  label: T.CacheUpstreams,
+  tooltip: [T.PressKeysToAddAValue, ['ENTER']],
+  type: INPUT_TYPES.AUTOCOMPLETE,
+  multiple: true,
+  validation: array(string().trim()).default(() => []),
+  dependOf: ['$general.STORAGE_BACKEND', '$general.TYPE', CACHE_ENABLE.name],
+  values: () => {
+    const { data: hosts = [] } = HostAPI.useGetHostsQuery()
+
+    const hostNames = []
+      .concat(hosts)
+      ?.flat()
+      ?.map((host) => host?.TEMPLATE?.HOSTNAME)
+      ?.filter(Boolean)
+
+    return arrayToOptions(hostNames, { addEmpty: false })
+  },
+  htmlType: ([STORAGE_BACKEND, TYPE, CACHE_ENABLED = 'NO'] = []) => {
+    if (
+      !typeIsOneOf(STORAGE_BACKEND, [isSsh]) ||
+      TYPE !== DATASTORE_TYPES?.IMAGE?.value ||
+      CACHE_ENABLED !== true ||
+      CACHE_ENABLED === 'NO'
+    ) {
+      return INPUT_TYPES.HIDDEN
+    }
+  },
+  fieldProps: {
+    freeSolo: true,
+  },
+  grid: { md: 12 },
+}
+
+const CACHE_MIN_AGE = {
+  name: 'CACHE_MIN_AGE',
+  label: T.CacheMinAge,
+  type: INPUT_TYPES.TEXT,
+  validation: number()
+    .positive()
+    .min(0)
+    .default(() => 0),
+  dependOf: ['$general.STORAGE_BACKEND', '$general.TYPE', CACHE_ENABLE.name],
+  htmlType: ([STORAGE_BACKEND, TYPE, CACHE_ENABLED = 'NO'] = []) => {
+    if (
+      !typeIsOneOf(STORAGE_BACKEND, [isSsh]) ||
+      TYPE !== DATASTORE_TYPES?.IMAGE?.value ||
+      CACHE_ENABLED !== true ||
+      CACHE_ENABLED === 'NO'
+    ) {
+      return INPUT_TYPES.HIDDEN
+    }
+  },
+  grid: { md: 5.875 },
+  fieldProps: {
+    InputProps: {
+      endAdornment: <InputAdornment position="end">{T.Seconds}</InputAdornment>,
+    },
+  },
+}
+
 /** @type {Field[]} - Common fields */
 export const COMMON_FIELDS = [
   RESTRICTED_DIRS,
@@ -282,6 +415,11 @@ export const COMMON_FIELDS = [
   LIMIT_TRANSFER_BW,
   LVM_THIN_ENABLE,
   NO_DECOMPRESS,
+  CACHE_ENABLE,
+  CACHE_PATH,
+  CACHE_MIN_AGE,
+  CACHE_MAX_SIZE,
+  CACHE_UPSTREAMS,
   DATASTORE_CAPACITY_CHECK,
   QCOW2_STANDALONE,
   NFS_AUTO_ENABLE,

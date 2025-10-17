@@ -14,16 +14,15 @@
  * limitations under the License.                                            *
  * ------------------------------------------------------------------------- */
 import _, { cloneDeep, merge, get } from 'lodash'
-import {
-  convertToMB,
-  isBase64,
-  transformXmlString,
-  scaleVcpuByCpuFactor,
-} from '@modules/utils'
+import { convertToMB, isBase64, scaleVcpuByCpuFactor } from '@modules/utils'
 import { MEMORY_RESIZE_OPTIONS, T } from '@ConstantsModule'
 
 // Attributes that will be always modify with the value of the form (except Storage, Network and PCI sections)
 const alwaysIncludeAttributes = {
+  general: {
+    AS_UID: true,
+    AS_GID: true,
+  },
   extra: {
     OsCpu: {
       OS: {
@@ -705,7 +704,6 @@ const transformActionsCreate = (template) => {
     if (template.RAW.DATA) {
       // DATA exists, so we add TYPE and transform DATA
       template.RAW.TYPE = template.HYPERVISOR
-      template.RAW.DATA = transformXmlString(template.RAW.DATA)
     } else {
       // DATA doesn't exist, remove RAW from template
       delete template.RAW
@@ -752,6 +750,25 @@ const transformActionsInstantiate = (template, original, features) => {
   ) {
     template.SCHED_ACTION = '![CDATA[]]'
   }
+
+  // CONTEXT SECTION: if `original` param has template variables that must
+  // be taken into account to instantiate the `template` param, it's necessary
+  // to include them in the `template`
+  const templateCtx = template.CONTEXT || {}
+  const originalCtx = original.TEMPLATE?.CONTEXT || {}
+
+  const mergedCtx = { ...templateCtx }
+
+  for (const key of Object.keys(templateCtx)) {
+    const value = templateCtx[key]
+    if (value === undefined || value === null || value === '') {
+      if (key in originalCtx) {
+        mergedCtx[key] = originalCtx[key]
+      }
+    }
+  }
+
+  template.CONTEXT = mergedCtx
 }
 
 /**

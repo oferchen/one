@@ -51,15 +51,23 @@ end
 
 def parse_pci(pci)
     card = {}
-
     card[:short_address] = pci[0]
-    card[:libvirt_address] =
-        "pci_0000_#{card[:short_address].gsub(/[:.]/, '_')}"
-    card[:address] = "0000:#{card[:short_address].gsub(/[:.]/, ':')}"
+
+    bus_address = pci[0].split(/[:.]/)
+
+    bus_address.unshift('0000') if bus_address.length == 3
+
+    card[:domain]   = bus_address[0]
+    card[:bus]      = bus_address[1]
+    card[:slot]     = bus_address[2]
+    card[:function] = bus_address[3]
+
+    card[:libvirt_address] = "pci_#{bus_address.join('_')}"
+    card[:address] = bus_address.join(':')
 
     begin
-        numa_node =
-            File.read("/sys/bus/pci/devices/0000:#{pci[0]}/numa_node").chomp
+        caddr     = "#{bus_address[0..2].join(':')}.#{bus_address[3]}"
+        numa_node = File.read("/sys/bus/pci/devices/#{caddr}/numa_node").chomp
     rescue StandardError
         numa_node = '-'
     end
@@ -68,13 +76,11 @@ def parse_pci(pci)
 
     card[:numa_node] = numa_node
 
-    card[:class_name], card[:class] = get_name_and_id(pci[1])
+    card[:class_name],  card[:class]  = get_name_and_id(pci[1])
     card[:vendor_name], card[:vendor] = get_name_and_id(pci[2])
     card[:device_name], card[:device] = get_name_and_id(pci[3])
 
-    card[:bus], card[:slot], card[:function] = pci[0].split(/[:.]/)
-
-    card[:type] = [card[:vendor], card[:device], card[:class]].join(':')
+    card[:type] = "#{card[:vendor]}:#{card[:device]}:#{card[:class]}"
 
     card
 end
@@ -92,11 +98,11 @@ def get_devices(filter = nil)
 end
 
 def pci_bus_path(device)
-    "/sys/bus/pci/devices/0000:#{device[:bus]}:#{device[:slot]}.#{device[:function]}"
+    "/sys/bus/pci/devices/#{device[:domain]}:#{device[:bus]}:#{device[:slot]}.#{device[:function]}"
 end
 
 def mdev_bus_path(device)
-    "/sys/class/mdev_bus/0000:#{device[:bus]}:#{device[:slot]}.#{device[:function]}"
+    "/sys/class/mdev_bus/#{device[:domain]}:#{device[:bus]}:#{device[:slot]}.#{device[:function]}"
 end
 
 def device_attr?(device, attribute)
@@ -181,7 +187,7 @@ devices.each do |dev|
         pval('CLASS_NAME', dev[:class_name]),
         pval('ADDRESS', dev[:address]),
         pval('SHORT_ADDRESS', dev[:short_address]),
-        pval('DOMAIN', '0000'),
+        pval('DOMAIN', dev[:domain]),
         pval('BUS', dev[:bus]),
         pval('SLOT', dev[:slot]),
         pval('FUNCTION', dev[:function]),
@@ -190,10 +196,10 @@ devices.each do |dev|
 
     # NVIDIA GPU device
     if CONF[:nvidia_vendors].include?(dev[:vendor])
-        # Better name for NVIDIA GPUs
-        values << pval('DEVICE_NAME', "#{dev[:vendor_name]} #{dev[:device_name]}")
-
         if virtfn?(dev)
+            # PCI name for NVIDIA vGPUs
+            values << pval('DEVICE_NAME', 'NVIDIA vGPU device')
+
             # For vGPU, the uuid is based on the address to get always the same
             values << pval(
                 'UUID',
@@ -213,6 +219,9 @@ devices.each do |dev|
                             'nvidia'
                         end
             values << pval('MDEV_MODE', mdev_mode)
+        else
+            # PCI name for NVIDIA GPUs
+            values << pval('DEVICE_NAME', "#{dev[:vendor_name]} #{dev[:device_name]}")
         end
     else
         values << pval('DEVICE_NAME', dev[:device_name])

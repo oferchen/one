@@ -81,6 +81,7 @@ gem 'public_suffix', ps
 gem 'rexml'
 gem 'aws-sdk-ec2', '>=1.151'
 gem 'aws-sdk-s3'
+gem 'ruby-saml'
 
 group :cli do
     gem 'gnuplot'
@@ -99,7 +100,7 @@ group :cli do
 end
 
 group :onecfg, :cli do
-    gem 'opennebula-augeas', '>= 0.6.6.pre'
+    gem 'ruby-augeas'
 end
 
 group :onecfg, :cloud, :oneflow do
@@ -132,7 +133,7 @@ end
 
 group :cloud do
     if ruby_version < Gem::Version.new('3.0.0')
-        gem 'thin'
+        gem 'thin', '~> 1.8.2'     # rack/thin 2.2.17 is incompatible with thin 2.0.0+
     end
     gem 'uuidtools'
     gem 'curb'

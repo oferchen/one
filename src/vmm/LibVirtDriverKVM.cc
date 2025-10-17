@@ -349,15 +349,16 @@ static void vtopol(ofstream& file, const VectorAttribute * topology,
 
 /**
  *  Returns disk bus based on this table:
- *         \ prefix   hd     sd             vd
- *  chipset \
- *  pc-q35-*          sata   [sd_default]   virtio
- *  (other)           ide    [sd_default]   virtio
+ *        prefix   hd     sd             vd
+ *  chipset
+ *  *q35*          sata   [sd_default]   virtio
+ *  *virt* (arm)   sata   [sd_default]   virtio
+ *  (other)        ide    [sd_default]   virtio
  *
  *  sd_default - SD_DISK_BUS value from vmm_exec_kvm.conf/template
  *               'sata' or 'scsi'
  */
-static string get_disk_bus(const std::string &machine,
+static string get_disk_bus(bool is_q35,
                            const std::string &target,
                            const std::string &sd_default)
 {
@@ -369,9 +370,7 @@ static string get_disk_bus(const std::string &machine,
             return "virtio";
         default:
         {
-            std::size_t found = machine.find("q35");
-
-            if (found != std::string::npos)
+            if (is_q35)
             {
                 return "sata";
             }
@@ -517,6 +516,7 @@ int LibVirtDriver::deployment_description_kvm(
     string  cpu_model;
     string  cpu_feature;
     string  cpu_mode;
+    string  cpu_evc_mode;
 
     vector<const VectorAttribute *> disk;
     const VectorAttribute * context;
@@ -835,9 +835,12 @@ int LibVirtDriver::deployment_description_kvm(
 
     // Check if firmware is set to auto for autoselection
     string firmware;
+    string firmware_format = "raw";
     bool boot_secure = false;
 
     get_attribute(vm, host, cluster, "OS", "FIRMWARE", firmware);
+
+    get_attribute(vm, host, cluster, "OS", "FIRMWARE_FORMAT", firmware_format);
 
     get_attribute(vm, host, cluster, "OS", "FIRMWARE_SECURE", boot_secure);
 
@@ -924,19 +927,26 @@ int LibVirtDriver::deployment_description_kvm(
     else if ( is_uefi )
     {
         string firmware_secure = "no";
+        std::string nvram_format;
 
         if (boot_secure)
         {
             firmware_secure = "yes";
         }
 
+        if (one_util::icasecmp(firmware_format, "qcow2"))
+        {
+            nvram_format = " format=\"qcow2\"";
+        }
+
         file << "\t\t<loader readonly=\"yes\" type=\"pflash\" "
              << "secure=\"" << firmware_secure << "\">"
              << firmware
              << "</loader>\n";
-        file << "\t\t<nvram>"
-             << vm->get_system_dir() << "/" << vm->get_name() << "_VARS.fd"
-             << "</nvram>\n";
+
+        file << "\t\t<nvram" << nvram_format << ">"
+            << vm->get_system_dir() << "/" << vm->get_name() << "_VARS.fd"
+            << "</nvram>\n";
     }
 
     file << "\t</os>" << endl;
@@ -959,6 +969,12 @@ int LibVirtDriver::deployment_description_kvm(
     // ------------------------------------------------------------------------
     get_attribute(vm, host, cluster, "CPU_MODEL", "MODEL", cpu_model);
     get_attribute(vm, host, cluster, "CPU_MODEL", "FEATURES", cpu_feature);
+    get_attribute(nullptr, nullptr, cluster, "EVC_MODE", cpu_evc_mode);
+
+    if (!cpu_evc_mode.empty())
+    {
+        cpu_model = cpu_evc_mode;
+    }
 
     if (cpu_model == "host-passthrough")
     {
@@ -1103,10 +1119,13 @@ int LibVirtDriver::deployment_description_kvm(
 
     num = vm->get_template_attribute("DISK", disk);
 
-    int sata_index = 0;
+    int    sata_index = 0;
     string sata_controllers;
 
-    if (machine.find("q35") != std::string::npos)
+    bool is_q35 = machine.find("q35")  != std::string::npos ||
+                  machine.find("virt") != std::string::npos;
+
+    if (is_q35)
     {
         sata_index = 1;
     }
@@ -1411,7 +1430,7 @@ int LibVirtDriver::deployment_description_kvm(
 
         file << "\t\t\t<target dev=" << one_util::escape_xml_attr(target);
 
-        disk_bus = get_disk_bus(machine, target, sd_bus);
+        disk_bus = get_disk_bus(is_q35, target, sd_bus);
 
         if (!disk_bus.empty())
         {
@@ -1605,7 +1624,7 @@ int LibVirtDriver::deployment_description_kvm(
         // * SATA bus
         //   - requires a controller per disk as it requires bus=0 and target=0
         //   - q35 adds ACHI controller in slot 0x1f function 2 (used for context)
-        //   - A controller will be added for each disk starting from 1 if q35
+        //   - A controller will be added for each disk starting from 1 if q35/virt
         // * SCSI bus
         //   - target is based on dev target to have a predictable order
         if ( target[0] == 's' && target[1] == 'd' )
@@ -1691,7 +1710,7 @@ int LibVirtDriver::deployment_description_kvm(
                  << one_util::escape_xml_attr(fname.str())  << "/>\n"
                  << "\t\t\t<target dev=" << one_util::escape_xml_attr(target);
 
-            disk_bus = get_disk_bus(machine, target, sd_bus);
+            disk_bus = get_disk_bus(is_q35, target, sd_bus);
 
             if (!disk_bus.empty())
             {
@@ -2126,6 +2145,7 @@ int LibVirtDriver::deployment_description_kvm(
     // ------------------------------------------------------------------------
     // PCI Passthrough
     // ------------------------------------------------------------------------
+    string pci_devices;
 
     num = vm->get_template_attribute("PCI", pci);
 
@@ -2144,6 +2164,26 @@ int LibVirtDriver::deployment_description_kvm(
 
         string uuid = pci[i]->vector_value("UUID");
         string mdev = pci[i]->vector_value("MDEV_MODE");
+
+        string _vendor = pci[i]->vector_value("VENDOR");
+        one_util::tolower(_vendor);
+
+        string _device = pci[i]->vector_value("DEVICE");
+        one_util::tolower(_device);
+
+        string _class = pci[i]->vector_value("CLASS");
+        one_util::tolower(_class);
+
+        string pci_device = _vendor + ":" + _device + ":" + _class;
+
+        if (pci_devices.empty())
+        {
+            pci_devices = pci_device;
+        }
+        else
+        {
+            pci_devices += "," + pci_device;
+        }
 
         one_util::tolower(mdev);
 
@@ -2208,11 +2248,8 @@ int LibVirtDriver::deployment_description_kvm(
         file << "\t\t</hostdev>" << endl;
     }
 
-    file << "\t</devices>" << endl;
 
-    std::size_t found = machine.find("q35");
-
-    if (found != std::string::npos || arch == "aarch64" )
+    if (is_q35 || arch == "aarch64" )
     {
         int  q35_root_ports = 0;
         bool q35_numa_topo  = true;
@@ -2226,7 +2263,6 @@ int LibVirtDriver::deployment_description_kvm(
 
         get_attribute(nullptr, host, cluster, "Q35_NUMA_PCIE", q35_numa_topo);
 
-        file << "\t<devices>" << endl;
         file << "\t\t<controller index='0' type='pci' model='pcie-root'/>" << endl;
 
         if (nodes.empty()) //Flat PCI hierarchy
@@ -2237,7 +2273,6 @@ int LibVirtDriver::deployment_description_kvm(
             }
 
             file << "\t\t<controller type='pci' model='pcie-to-pci-bridge'/>" << endl;
-            file << "\t</devices>" << endl;
         }
         else if (q35_numa_topo) //PCIe expander bus in each NUMA node
         {
@@ -2311,10 +2346,20 @@ int LibVirtDriver::deployment_description_kvm(
                  << "\t\t\t<address type='pci' bus='22' slot='0' function='0'/>" << endl
                  << "\t\t</controller>" << endl;
 
-            file << "\t</devices>" << endl;
         }
     }
 
+    string tpm_model;
+    get_attribute(vm, host, cluster, "TPM", "MODEL", tpm_model);
+
+    if (!tpm_model.empty())
+    {
+        file << "\t\t" << "<tpm model='" << tpm_model << "'>\n"
+            << "\t\t\t<backend type='emulator' version='2.0'/>\n"
+            << "\t\t</tpm>\n";
+    }
+
+    file << "\t</devices>" << endl;
 
     // ------------------------------------------------------------------------
     // Features
@@ -2452,6 +2497,9 @@ int LibVirtDriver::deployment_description_kvm(
          << "\t\t\t<one:deployment_time>"
          << time(0)
          << "</one:deployment_time>\n"
+         << "\t\t\t<one:pci_devices>"
+         << pci_devices
+         << "</one:pci_devices>\n"
          << "\t\t</one:vm>\n"
          // << "\t\t<opennebula>\n" << vm->to_xml(vm_xml) << "\t\t</opennebula>\n"
          << "\t</metadata>\n";

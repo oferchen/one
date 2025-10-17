@@ -418,6 +418,7 @@ VAR_DIRS="$VAR_LOCATION/remotes \
           $VAR_LOCATION/remotes/auth/ssh \
           $VAR_LOCATION/remotes/auth/x509 \
           $VAR_LOCATION/remotes/auth/ldap \
+          $VAR_LOCATION/remotes/auth/saml \
           $VAR_LOCATION/remotes/auth/server_x509 \
           $VAR_LOCATION/remotes/auth/server_cipher \
           $VAR_LOCATION/remotes/auth/dummy \
@@ -530,6 +531,7 @@ INSTALL_FILES=(
     AUTH_SSH_FILES:$VAR_LOCATION/remotes/auth/ssh
     AUTH_X509_FILES:$VAR_LOCATION/remotes/auth/x509
     AUTH_LDAP_FILES:$VAR_LOCATION/remotes/auth/ldap
+    AUTH_SAML_FILES:$VAR_LOCATION/remotes/auth/saml
     AUTH_SERVER_X509_FILES:$VAR_LOCATION/remotes/auth/server_x509
     AUTH_SERVER_CIPHER_FILES:$VAR_LOCATION/remotes/auth/server_cipher
     AUTH_DUMMY_FILES:$VAR_LOCATION/remotes/auth/dummy
@@ -821,6 +823,7 @@ RUBY_AUTH_LIB_FILES="src/authm_mad/remotes/ssh/ssh_auth.rb \
                 src/authm_mad/remotes/server_x509/server_x509_auth.rb \
                 src/authm_mad/remotes/server_cipher/server_cipher_auth.rb \
                 src/authm_mad/remotes/ldap/ldap_auth.rb \
+                src/authm_mad/remotes/saml/saml_auth.rb \
                 src/authm_mad/remotes/x509/x509_auth.rb"
 
 #-----------------------------------------------------------------------------
@@ -828,7 +831,8 @@ RUBY_AUTH_LIB_FILES="src/authm_mad/remotes/ssh/ssh_auth.rb \
 # and remotes directory
 #-----------------------------------------------------------------------------
 
-REMOTE_FILES="src/vmm_mad/remotes/kvm/vgpu"
+REMOTE_FILES="src/vmm_mad/remotes/kvm/vgpu
+              src/vmm_mad/remotes/kvm/vtpm_setup"
 
 MAD_SH_LIB_FILES="src/mad/sh/scripts_common.sh \
                   src/mad/sh/create_container_image.sh"
@@ -1065,6 +1069,7 @@ IM_PROBES_QEMU_VM_SNAPSHOT_FILES="\
 
 IM_PROBES_ETC_QEMU_PROBES_FILES="\
     src/im_mad/remotes/qemu-probes.d/pci.conf \
+    src/im_mad/remotes/qemu-probes.d/forecast.conf \
     src/im_mad/remotes/lib/probe_db.conf"
 
 # DUMMY PROBES
@@ -1135,6 +1140,8 @@ AUTH_SERVER_X509_FILES="src/authm_mad/remotes/server_x509/authenticate"
 AUTH_X509_FILES="src/authm_mad/remotes/x509/authenticate"
 
 AUTH_LDAP_FILES="src/authm_mad/remotes/ldap/authenticate"
+
+AUTH_SAML_FILES="src/authm_mad/remotes/saml/authenticate"
 
 AUTH_SSH_FILES="src/authm_mad/remotes/ssh/authenticate"
 
@@ -1855,6 +1862,7 @@ HM_ETC_FILES="src/hm_mad/hmrc"
 
 AUTH_ETC_FILES="src/authm_mad/remotes/server_x509/server_x509_auth.conf \
                 src/authm_mad/remotes/ldap/ldap_auth.conf \
+                src/authm_mad/remotes/saml/saml_auth.conf \
                 src/authm_mad/remotes/x509/x509_auth.conf"
 
 #-------------------------------------------------------------------------------
